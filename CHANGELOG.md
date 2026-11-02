@@ -2,7 +2,7 @@
 All changes to this project will be documented in this file
 
 ## [0.3.1]
-## Fixed
+### Fixed
 - License format
 ## [0.3.0]
 
@@ -29,7 +29,7 @@ All changes to this project will be documented in this file
 - StdVecBase
 - LocalAlloc impl for all `T: Deref<Target = impl LocalAlloc>`
 - `vec` module in favor of `alloc_vec`, `array_vec` and `slice_vec` modules
-## Fixed
+### Fixed
 - Tests
 
 ## [0.2.4] - 2026-05-06
@@ -66,6 +66,7 @@ All changes to this project will be documented in this file
 - Custom containers
 - Arena allocator implementation
 
+[0.3.1]: https://crates.io/crates/leimu-mem/0.3.1
 [0.3.0]: https://crates.io/crates/leimu-mem/0.3.0
 [0.2.4]: https://crates.io/crates/leimu-mem/0.2.4
 [0.2.3]: https://crates.io/crates/leimu-mem/0.2.3
