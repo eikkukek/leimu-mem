@@ -29,7 +29,7 @@ pub trait FromIteratorIn<T>: Sized
 /// Provides [`collect_in`][1].
 ///
 /// [1]: IteratorExt::collect_in
-pub trait IteratorExt: Iterator {
+pub trait CollectIn: Iterator {
 
     /// Transforms an iterator into a collection that uses `allocator`.
     fn collect_in<T>(self, allocator: T::Alloc) -> Result<T, ReserveError<()>>
@@ -41,6 +41,6 @@ pub trait IteratorExt: Iterator {
     }
 }
 
-impl<T> IteratorExt for T
+impl<T> CollectIn for T
     where T: Iterator
 {}

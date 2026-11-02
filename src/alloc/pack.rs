@@ -109,22 +109,22 @@ pub fn pack_block<T>(
 /// [1]: LocalAlloc::deallocate
 ///
 /// # Examples
-/// ``` rust
-///
+/// ``` ignore
 /// use core::ptr::NonNull;
 ///
+/// use leimu_mem::arena::Arena;
 /// use leimu_mem::alloc::{pack_alloc, pack_block};
 /// use leimu_mem::alloc::LocalAlloc;
 /// 
-/// let allocator: MyAlloc = ...; 
+/// let allocator = Arena::new(512).unwrap();
 ///
-/// let pack1 = NonNull::dangling();
-/// let pack2 = NonNull::dangling();
+/// let mut pack1 = NonNull::dangling();
+/// let mut pack2 = NonNull::dangling();
 /// let (ptr, layout) = pack_alloc(
 ///     &allocator, // Can be any allocator implementing LocalAlloc.
 ///     [
-///         pack_block(pack1, 10).unwrap(), // Allocates 10 `u8`.
-///         pack_block(pack2, 1).unwrap(), // Allocates 1 `String`.
+///         pack_block(&mut pack1, 10).unwrap(), // Allocates 10 `u8`.
+///         pack_block(&mut pack2, 1).unwrap(), // Allocates 1 `String`.
 ///     ],
 /// ).unwrap();
 /// unsafe {

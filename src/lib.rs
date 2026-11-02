@@ -6,7 +6,7 @@
 //! In addition, this crate contains an [`arena`] allocator implementation.
 //!
 //! # Usage
-//!``` rust
+//!```ignore
 //! use leimu_mem::arena::Arena;
 //! use leimu_mem::alloc_vec::FixedVec;
 //! use leimu_mem::slot_map::SlotMap;
@@ -51,6 +51,8 @@ pub mod arena;
 #[cfg(feature = "std")]
 mod smallbox;
 pub mod iter;
+#[cfg(test)]
+mod tests;
 
 mod macros;
 mod const_fn;

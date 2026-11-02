@@ -2,10 +2,6 @@
 
 A library providing various collections for use with custom allocators.
 
-This includes vector types and a slot map implementation.
-
-In addition, this crate contains an arena allocator implementation.
-
 # Usage
 ``` rust
 use leimu_mem::arena::Arena;

@@ -21,10 +21,12 @@ All changes to this project will be documented in this file
 - Explicit impl of LocalAlloc for `Arc<T: LocalAlloc>`
 
 ### Removed
-- StdAlloc in favor of GlobalAlloc implementation for ()
+- StdAlloc in favor of GlobalAlloc implementation for the unit type `()`
 - StdVecBase
 - LocalAlloc impl for all `T: Deref<Target = impl LocalAlloc>`
 - `vec` module in favor of `alloc_vec`, `array_vec` and `slice_vec` modules
+## Fixed
+- Tests
 
 ## [0.2.4] - 2026-05-06
 

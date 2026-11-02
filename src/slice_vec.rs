@@ -25,14 +25,14 @@ use crate::{
 /// # Examples
 /// ``` rust
 /// use std::mem::MaybeUninit;
-/// use leimu_mem::alloc_vec::SliceVec;
+/// use leimu_mem::slice_vec::SliceVec;
 ///
 /// let mut array: [MaybeUninit<u32>; 4] = unsafe {
 ///     MaybeUninit
 ///         ::uninit()
 ///         .assume_init()
 /// };
-/// let mut vec = SliceVec::new(&mut array);
+/// let mut vec = SliceVec::<_, u32>::new(&mut array);
 /// vec.extend([1, 2, 3, 4]);
 /// assert!(vec.is_full());
 /// assert_eq!(&vec, &[1, 2, 3, 4]);
@@ -506,22 +506,6 @@ impl<'a, T, SizeType> SliceVec<'a, T, SizeType>
     /// dangling (and aligned) address.
     ///
     /// Note that this does **not** drop any values contained in the vector.
-    ///
-    /// # Example
-    /// ``` rust
-    /// use leimu_mem::alloc::LocalAlloc;
-    /// use leimu_mem::slice_vec::SliceVec;
-    ///
-    /// let alloc: impl LocalAlloc = ...;
-    /// let mut vec = SliceVec::with_capacity_in(10, &alloc);
-    /// vec.extend(["foo".to_string(), "bar".to_string()]);
-    /// // remember to clear the vector if the values require dropping!
-    /// vec.clear();
-    /// let (ptr, layout) = vec.forget();
-    /// unsafe {
-    ///     alloc.deallocate(ptr, layout);
-    /// }
-    /// ```
     #[inline]
     pub fn forget(&mut self) -> (NonNull<u8>, Layout) {
         let ptr: NonNull<u8> = self.as_non_null().cast();

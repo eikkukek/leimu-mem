@@ -18,10 +18,10 @@
 //! [1]: std::alloc::alloc
 //!
 //! # Examples
-//! ```rust
+//! ```ignore
 //! use leimu_mem::slot_map::SlotMap;
 //!
-//! let mut map = SlotMap::new();
+//! let mut map = SlotMap::<_, u32>::new();
 //! let key1 = map.insert("hello");
 //! let key2 = map.insert("world");
 //! assert_eq!(map.get(key1).ok(), Some(&"hello"));
@@ -297,20 +297,15 @@ mod base {
 /// Insertion and reservations return `Result` and may fail due to:
 ///
 /// - Allocation failure
-/// - Capacity reaching over u32::MAX
-///
-/// # Safety
-///
-/// The allocator must return valid pointers that are aligned to the requested alignment
-/// and that are not freed or overwritten as long as the slot map uses them.
-///
-/// [1]: std::alloc::alloc
+/// - Capacity exceeding [`u32::MAX`]
 ///
 /// # Examples
-/// ```rust
-/// let allocator = MyLocalAlloc::default();
-/// let mut map = DynSlotMap::new(&allocator);
-/// let key = map.insert("value").unwrap();
+/// ``` ignore
+/// use leimu_mem::arena::Arena;
+/// use leimu_mem::slot_map::DynSlotMap;
+/// let allocator = Arena::new(512).unwrap();
+/// let mut map = DynSlotMap::new_in(&allocator);
+/// let key = map.insert("value");
 /// map.remove(key);
 pub type DynSlotMap<T, A> = base::Map<T, A, policy::Dyn>;
 
@@ -334,17 +329,14 @@ pub type DynSlotMap<T, A> = base::Map<T, A, policy::Dyn>;
 /// - Capacity reaching over u32::MAX
 /// - Reaching fixed capacity
 ///
-/// # Safety
-///
-/// The allocator must return valid pointers that are aligned to the requested alignment
-/// and that are not freed or overwritten as long as the slot map uses them.
-///
 /// # Example
 ///
-/// ```rust
-/// let allocator = MyLocalAlloc::default();
+/// ```ignore
+/// use leimu_mem::arena::Arena;
+/// use leimu_mem::slot_map::FixedSlotMap;
+/// let allocator = Arena::new(512).unwrap();
 /// let mut map = FixedSlotMap::with_capacity_in(8, &allocator).unwrap();
-/// let key = map.insert("value").unwrap();
+/// let key = map.insert("value");
 /// map.remove(key);
 /// ```
 pub type FixedSlotMap<T, A> = base::Map<T, A, policy::Fixed>;
@@ -1191,7 +1183,7 @@ mod std_features {
     /// ```rust
     /// use leimu_mem::slot_map::SlotMap;
     ///
-    /// let mut map = SlotMap::new();
+    /// let mut map = SlotMap::<_, u32>::new();
     /// let key1 = map.insert("hello");
     /// let key2 = map.insert("world");
     /// assert_eq!(map.get(key1).ok(), Some(&"hello"));

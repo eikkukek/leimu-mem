@@ -67,7 +67,7 @@ pub const fn max_align() -> usize {
 ///
 /// # Examples
 /// ``` rust
-/// use leimu_mem::alloc::LocalAlloc;
+/// use leimu_mem::alloc::{LocalAlloc, Layout};
 /// use leimu_mem::arena::Arena;
 /// use leimu_mem::alloc_vec::FixedVec;
 ///
@@ -81,7 +81,7 @@ pub const fn max_align() -> usize {
 ///     assert!(arena.try_guard().is_none());
 ///     unsafe {
 ///         // Guard active
-///         assert!(arena.alloc(Layout::new::<i32>()).is_err())
+///         assert!(arena.allocate(Layout::new::<i32>()).is_err())
 ///     }
 /// }
 /// // Guard dropped

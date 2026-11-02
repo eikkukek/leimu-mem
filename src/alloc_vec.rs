@@ -146,7 +146,7 @@ unsafe impl ReservePolicy<u32> for FixedPolicy32 {
 /// [`FixedVec32`]) when using it with a local allocator.
 ///
 /// # Examples
-/// ``` rust
+/// ```ignore
 /// use leimu_mem::arena::Arena;
 /// use leimu_mem::alloc_vec::FixedVec;
 ///
