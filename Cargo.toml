@@ -1,0 +1,14 @@
+[package]
+name = "leimu-mem"
+version = "0.2.4"
+edition = "2024"
+description = "Custom allocator collections and utilities."
+license = "MIT or Apache-2.0"
+repository = "https://github.com/eikkukek/leimu"
+readme = "README.md"
+keywords = ["allocator", "arena", "slotmap", "container", "vector"]
+categories = ["data-structures", "memory-management", "no-std", "no-std::no-alloc"]
+
+[features]
+default = ["std"]
+std = []
