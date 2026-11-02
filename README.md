@@ -1,4 +1,4 @@
-# leimu-mem
+# [leimu-mem]
 
 A library providing various collections for use with custom allocators.
 
@@ -24,3 +24,6 @@ assert_eq!(key1.index(), key2.index());
 assert!(slot_map.get(key1).is_err());
 assert!(matches!(slot_map.get(key2), Ok(&"bar")));
 ```
+
+
+[leimu-mem]: https://crates.io/crates/leimu-mem
