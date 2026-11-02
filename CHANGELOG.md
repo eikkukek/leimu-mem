@@ -1,6 +1,6 @@
 # Cangelog
 All changes to this project will be documented in this file
-## [unreleased]
+## [0.3.0]
 
 ### Changed
 - Improved local alloc dyn compatibility by removing generic Error type
