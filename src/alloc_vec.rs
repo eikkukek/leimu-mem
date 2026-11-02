@@ -146,7 +146,9 @@ unsafe impl ReservePolicy<u32> for FixedPolicy32 {
 /// [`FixedVec32`]) when using it with a local allocator.
 ///
 /// # Examples
-/// ```ignore
+/// ```
+/// # #[cfg(feature = "std")]
+/// # {
 /// use leimu_mem::arena::Arena;
 /// use leimu_mem::alloc_vec::FixedVec;
 ///
@@ -156,6 +158,7 @@ unsafe impl ReservePolicy<u32> for FixedPolicy32 {
 /// vec.append(&[2, 3]);
 /// vec.extend(4..6);
 /// assert_eq!(vec, [1, 2, 3, 4, 5]);
+/// # }
 /// ```
 ///
 /// [1]: LocalAlloc

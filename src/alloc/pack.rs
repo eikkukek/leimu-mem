@@ -109,7 +109,9 @@ pub fn pack_block<T>(
 /// [1]: LocalAlloc::deallocate
 ///
 /// # Examples
-/// ``` ignore
+/// ``` 
+/// # #[cfg(feature = "std")]
+/// # {
 /// use core::ptr::NonNull;
 ///
 /// use leimu_mem::arena::Arena;
@@ -135,6 +137,7 @@ pub fn pack_block<T>(
 ///     pack2.drop_in_place();
 ///     allocator.deallocate(ptr, layout);
 /// }
+/// # }
 /// ```
 pub fn pack_alloc<A, const N: usize>(
     allocator: &A,

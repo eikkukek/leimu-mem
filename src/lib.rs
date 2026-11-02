@@ -1,12 +1,9 @@
 //! A library providing various collections for use with [`custom allocators`][1].
 //!
-//! This includes vector types [`alloc_vec`], [`array_vec`] and [`slice_vec`] as well as
-//! [`a slot map implementation`][3].
-//!
-//! In addition, this crate contains an [`arena`] allocator implementation.
-//!
 //! # Usage
-//!```ignore
+//!```
+//! # #[cfg(feature = "std")]
+//! # {
 //! use leimu_mem::arena::Arena;
 //! use leimu_mem::alloc_vec::FixedVec;
 //! use leimu_mem::slot_map::SlotMap;
@@ -26,6 +23,7 @@
 //! assert_eq!(key1.index(), key2.index());
 //! assert!(slot_map.get(key1).is_err());
 //! assert!(matches!(slot_map.get(key2), Ok(&"bar")));
+//! # }
 //! ```
 //!
 //! [1]: alloc::LocalAlloc
@@ -58,3 +56,8 @@ mod macros;
 mod const_fn;
 
 pub use const_fn::*;
+
+#[doc = include_str!("../README.md")]
+#[cfg(doctest)]
+#[cfg(feature = "std")]
+pub struct ReadMeDoctests;

@@ -18,7 +18,9 @@
 //! [1]: std::alloc::alloc
 //!
 //! # Examples
-//! ```ignore
+//! ```
+//! # #[cfg(feature = "std")]
+//! # {
 //! use leimu_mem::slot_map::SlotMap;
 //!
 //! let mut map = SlotMap::<_, u32>::new();
@@ -28,6 +30,7 @@
 //! assert_eq!(map.remove(key1).ok(), Some("hello"));
 //! assert_eq!(map.get(key1).ok(), None);
 //! assert_eq!(map.get(key2).ok(), Some(&"world"));
+//! # }
 //! ```
 
 use core::{
@@ -299,14 +302,20 @@ mod base {
 /// - Allocation failure
 /// - Capacity exceeding [`u32::MAX`]
 ///
+/// [1]: std::alloc::GlobalAlloc
+///
 /// # Examples
-/// ``` ignore
+/// ```
+/// # #[cfg(feature = "std")]
+/// # {
 /// use leimu_mem::arena::Arena;
 /// use leimu_mem::slot_map::DynSlotMap;
 /// let allocator = Arena::new(512).unwrap();
 /// let mut map = DynSlotMap::new_in(&allocator);
 /// let key = map.insert("value");
 /// map.remove(key);
+/// # }
+/// ```
 pub type DynSlotMap<T, A> = base::Map<T, A, policy::Dyn>;
 
 /// A fixed-capacity slot map storing values of type `T`, backed by allocator `A`.
@@ -331,13 +340,16 @@ pub type DynSlotMap<T, A> = base::Map<T, A, policy::Dyn>;
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
+/// # #[cfg(feature = "std")]
+/// # {
 /// use leimu_mem::arena::Arena;
 /// use leimu_mem::slot_map::FixedSlotMap;
 /// let allocator = Arena::new(512).unwrap();
 /// let mut map = FixedSlotMap::with_capacity_in(8, &allocator).unwrap();
 /// let key = map.insert("value");
 /// map.remove(key);
+/// # }
 /// ```
 pub type FixedSlotMap<T, A> = base::Map<T, A, policy::Fixed>;
 
