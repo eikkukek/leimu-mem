@@ -1,10 +1,10 @@
 # Cangelog
 All changes to this project will be documented in this file
 
-## [0.3.1]
+## [0.3.1] - 2026-11-02
 ### Fixed
 - License format
-## [0.3.0]
+## [0.3.0] - 2026-11-02
 
 ### Changed
 - Improved local alloc dyn compatibility by removing generic Error type
