@@ -3,12 +3,15 @@
 mod guard;
 
 use core::{
-    sync::atomic::{self, AtomicUsize, AtomicBool},
     ptr::NonNull,
     marker::PhantomData,
     error,
     fmt::{self, Display},
 };
+
+use portable_atomic as atomic;
+
+use atomic::{AtomicUsize, AtomicBool};
 
 use crate::{
     align_up,
@@ -223,7 +226,7 @@ impl<F: Conditional> Arena<F> {
             ))
         }
         let mut aligned_start = 0;
-        self.pos.try_update(
+        self.pos.fetch_update(
             atomic::Ordering::AcqRel,
             atomic::Ordering::Acquire,
             |pos|  {

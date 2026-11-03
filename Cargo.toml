@@ -1,6 +1,6 @@
 [package]
 name = "leimu-mem"
-version = "0.3.1"
+version = "0.3.2"
 edition = "2024"
 description = "Custom allocator collections and utilities."
 license = "MIT OR Apache-2.0"
@@ -9,6 +9,10 @@ readme = "README.md"
 keywords = ["allocator", "arena", "slotmap", "container", "vector"]
 categories = ["data-structures", "memory-management", "no-std", "no-std::no-alloc"]
 
+
+[dependencies]
+portable-atomic = { version = "1.15.0", optional = true }
+
 [features]
 default = ["std"]
-std = []
+std = ["dep:portable-atomic"]

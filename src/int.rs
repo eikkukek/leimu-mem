@@ -78,7 +78,6 @@ pub trait Integer:
     /// Returns a range-based iterator.
     ///
     /// Equivalent of calling a..b.
-    #[must_use]
     fn iter(self, to: Self) -> Self::Iter;
 
     /// Returns an iterator over the bits of self.

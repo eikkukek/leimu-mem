@@ -1,5 +1,8 @@
 # Cangelog
 All changes to this project will be documented in this file
+## [0.3.2] - 2026-11-03
+### Changed
+- Use `portable-atomic` instead of `core::sync::atomic` in `Arena` implementation.
 
 ## [0.3.1] - 2026-11-02
 ### Fixed
@@ -66,6 +69,7 @@ All changes to this project will be documented in this file
 - Custom containers
 - Arena allocator implementation
 
+[0.3.2]: https://crates.io/crates/leimu-mem/0.3.2
 [0.3.1]: https://crates.io/crates/leimu-mem/0.3.1
 [0.3.0]: https://crates.io/crates/leimu-mem/0.3.0
 [0.2.4]: https://crates.io/crates/leimu-mem/0.2.4
