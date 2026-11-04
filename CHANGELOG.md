@@ -1,5 +1,8 @@
 # Cangelog
 All changes to this project will be documented in this file
+## unreleased
+### Fixed
+- Docs
 ## [0.3.2] - 2026-11-03
 ### Changed
 - Use `portable-atomic` instead of `core::sync::atomic` in `Arena` implementation.

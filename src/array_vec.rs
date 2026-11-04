@@ -191,7 +191,7 @@ impl<T, const N: usize> ArrayVec<T, N>
     /// # Safety
     /// If `new_len` > current length, elements with elements at indices greater than or equal to
     /// the current length are left uninitialized and if `new_len` < current length, elements at
-    /// indices less than or equal to the current length are not dropped when the vector is
+    /// indices less than the current length are not dropped when the vector is
     /// [`cleared`][1] or [`dropped`][Drop].
     ///
     /// [1]: Self::clear
