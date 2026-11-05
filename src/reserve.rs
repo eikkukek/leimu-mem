@@ -10,7 +10,7 @@ use core::{
     fmt::{self, Debug, Display},
 };
 
-use crate::{alloc::AllocError, int::{FromUsize, IntoUsize}};
+use crate::{alloc::AllocError, int::{FromUsize, IntoUsize, NonZeroInteger}};
 
 /// The type [`ReserveError`].
 #[derive(Debug)]
@@ -163,37 +163,40 @@ impl From<LayoutError> for ReserveError<()> {
 /// # Safety
 /// Implementing this trait is unsafe because the implementation must adhere to certain rules. For
 /// example, [`ReservePolicy::grow`] must never return a value that's less than `required`.
-pub unsafe trait ReservePolicy<SizeType = usize>
-    where SizeType: FromUsize + IntoUsize,
+pub unsafe trait ReservePolicy<S = usize>
+    where S: FromUsize + IntoUsize,
 {
 
     /// The grow factor used when reallocation is needed.
-    fn grow_factor() -> SizeType;
+    ///
+    /// The factor is returned as a (numerator, denumerator) tuple and growth is by default
+    /// calculated as `capacity.div_ceil(denumerator) * numerator`.
+    fn growth_factor() -> (S, impl NonZeroInteger<Base = S>);
 
     /// Returns whether the collection can grow.
     ///
-    /// The default implementation is [`grow_factor`][1] == 0.
+    /// The default implementation is [`growth_factor`][1].0 == 0.
     ///
-    /// [1]: Self::grow_factor
+    /// [1]: Self::growth_factor
     fn can_grow() -> bool {
-        Self::grow_factor() != SizeType::ZERO
+        Self::growth_factor().0 != S::ZERO
     }
 
     /// Tries to grow the capacity.
-    fn grow(current: SizeType, required: usize) -> Result<SizeType, ReserveError<()>>;
+    fn grow(current: S, required: usize) -> Result<S, ReserveError<()>>;
 
     /// Grows the capacity, possibly panicking if there's an error.
-    fn grow_infallible(current: SizeType, required: usize) -> SizeType;
+    fn grow_infallible(current: S, required: usize) -> S;
 
     /// Returns minimum non-zero capacity, given the size of an element.
     #[inline]
-    fn min_non_zero_capacity(size: usize) -> SizeType {
+    fn min_non_zero_capacity(size: usize) -> S {
         if size == 1 {
-            SizeType::from_usize(8)
+            S::from_usize(8)
         } else if size <= 1024 {
-            SizeType::from_usize(4)
+            S::from_usize(4)
         } else {
-            SizeType::from_usize(1)
+            S::from_usize(1)
         }
     }
 
@@ -201,23 +204,24 @@ pub unsafe trait ReservePolicy<SizeType = usize>
     ///
     /// You **should** not manually implement this function.
     ///
-    /// You can control the behavior with [`grow_factor`][1], [`min_non_zero_capacity`][2] and
+    /// You can control the behavior with [`growth_factor`][1], [`min_non_zero_capacity`][2] and
     /// [`grow`][3].
     ///
-    /// [1]: Self::grow_factor
+    /// [1]: Self::growth_factor
     /// [2]: Self::min_non_zero_capacity
     /// [3]: Self::grow
     #[inline]
     fn grow_one(
-        current: SizeType,
+        current: S,
         elem_layout: Layout,
-    ) -> Result<SizeType, ReserveError<()>>
+    ) -> Result<S, ReserveError<()>>
     {
+        let (numer, denom) = Self::growth_factor();
         Ok(Self
             ::grow(
                 current,
                 (current.into_usize() + 1)
-                    .max(current.into_usize() * Self::grow_factor().into_usize())
+                    .max(current.into_usize().div_ceil(denom.get().into_usize()) * numer.into_usize())
             )?.max(Self::min_non_zero_capacity(elem_layout.size()))
         )
     }

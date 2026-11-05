@@ -41,6 +41,7 @@ use core::{
     marker::PhantomData,
     mem::MaybeUninit,
     ops::{Index, IndexMut},
+    num::NonZeroU32,
 };
 
 use crate::{
@@ -93,8 +94,8 @@ mod policy {
     unsafe impl ReservePolicy<u32> for Dyn {
 
         #[inline]
-        fn grow_factor() -> u32 {
-            2
+        fn growth_factor() -> (u32, impl NonZeroInteger<Base = u32>) {
+            (2, NonZeroU32::ONE)
         }
 
         #[inline]

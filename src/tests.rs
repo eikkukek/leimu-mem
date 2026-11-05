@@ -5,14 +5,25 @@ use crate::*;
 #[test]
 #[cfg(feature = "std")]
 fn alloc_vec() -> Result<(), reserve::ReserveError<()>> {
+    use std::string::ToString;
     use arena::Arena;
     use alloc_vec::FixedVec;
     let arena = Arena::new(512)?;
-    let mut vec = FixedVec::with_capacity_in(5, &arena).unwrap();
-    vec.push(1);
-    vec.append(&[2, 3]);
-    vec.extend(4..6);
-    assert_eq!(vec, [1, 2, 3, 4, 5]);
+    let mut vec = FixedVec::with_capacity_in(6, &arena).unwrap();
+    vec.push("foo".to_string());
+    vec.extend_from_slice(&["bar".to_string(), "hello".to_string()]);
+    vec.extend(('a'..='c').map(|c| c.to_string()));
+    assert_eq!(vec, ["foo", "bar", "hello", "a", "b", "c"]);
+    vec.remove(2);
+    vec.insert(4, "aa".to_string());
+    vec.retain_mut(|f| {
+        let retain = f.contains("a");
+        if retain {
+            *f = f.to_uppercase();
+        }
+        retain
+    });
+    assert_eq!(vec, ["BAR", "A", "AA"]);
     Ok(())
 }
 

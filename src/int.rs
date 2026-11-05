@@ -175,6 +175,9 @@ pub trait NonZeroInteger:
     /// The internal [`Integer`] type.
     type Base: Integer;
 
+    /// The constant `1` of this type.
+    const ONE: Self;
+
     /// Creates a new [`NonZero`], returning [`None`] if `value` is zero.
     fn new(value: Self::Base) -> Option<Self>;
     
@@ -196,6 +199,8 @@ macro_rules! impl_non_zero_integer {
         impl NonZeroInteger for core::num::NonZero<$t> {
 
             type Base = $t;
+
+            const ONE: Self = unsafe { Self::new_unchecked(1) };
 
             #[inline]
             fn new(value: $t) -> Option<Self> {

@@ -1,6 +1,13 @@
 # Cangelog
 All changes to this project will be documented in this file
-## unreleased
+## [0.4.0] - 2026-11-05
+
+### Removed (breaking)
+- `SliceVec` and `ArrayVec`.
+### Added
+- New trait implementations for `AllocVec`.
+### Renamed
+- `ReservePolicy::grow_factor` to `growth_factor`.
 ### Fixed
 - Docs
 ## [0.3.2] - 2026-11-03
@@ -72,6 +79,7 @@ All changes to this project will be documented in this file
 - Custom containers
 - Arena allocator implementation
 
+[0.4.0]: https://crates.io/crates/leimu-mem/0.4.0
 [0.3.2]: https://crates.io/crates/leimu-mem/0.3.2
 [0.3.1]: https://crates.io/crates/leimu-mem/0.3.1
 [0.3.0]: https://crates.io/crates/leimu-mem/0.3.0

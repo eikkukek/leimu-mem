@@ -5,7 +5,7 @@ macro_rules! impl_traits {
                 $(where $($trbl_this:ty: $trbr_this:tt$(<$trbg_this:ty>)?),+)? =>
             $(type $stype_this:ident = $sty_this:ty;)*
             $(
-                $(#[$macro_this:ident $(($macro_spec_this:ident))?])*
+                $(#[$meta_this:meta])*
                 fn $met_this:ident$(<$($met_g_this:tt $(: $met_gb_this:tt)?),*>)?($($arg_this:tt)*) $(-> $ret_this:ty)? $body_this:block
             )*
         ,
@@ -13,7 +13,7 @@ macro_rules! impl_traits {
                 $(where $($trbl:ty: $trbr:tt$(<$trbg:ty>)?),+)? =>
             $(type $stype:ident = $sty:ty;)*
             $(
-                $(#[$macro:ident $(($macro_spec:ident))?])*
+                $(#[$meta:meta])*
                 fn $met:ident$(<$($met_g:tt $(: $met_gb:tt)?),*>)?($($arg:tt)*) $(-> $ret:ty)? $body:block
             )*
         ),*
@@ -33,7 +33,7 @@ macro_rules! impl_traits {
             )*
 
             $(
-                $(#[$macro_this $(($macro_spec_this))?])*
+                $(#[$meta_this])*
                 fn $met_this$(<$($met_g_this $(: $met_gb_this)?),*>)?($($arg_this)*) $(-> $ret_this)? $body_this
             )*
         }
@@ -42,7 +42,7 @@ macro_rules! impl_traits {
             $($trait $(<$($trg),+>)? $(for $(&$lifetime)? $(mut &$lifetime_mut)?)? $(where $($trbl: $trbr$(<$trbg>)?),+)? =>
                 $(type $stype = $sty;)*
                 $(
-                    $(#[$macro $(($macro_spec))?])*
+                    $(#[$meta])*
                     fn $met$(<$($met_g $(: $met_gb)?),*>)?($($arg)*) $(-> $ret)? $body
                 )*
             ),*

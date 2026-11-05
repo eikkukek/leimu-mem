@@ -6,7 +6,7 @@
 /// ``` rust
 /// use std::borrow::Borrow;
 /// leimu_mem::smallbox!(
-///     /// Supports doc comments
+///     /// `Borrow<str>` trait object.
 ///     pub struct MySmallBox: Borrow<str>
 /// );
 /// // No extra allocation
