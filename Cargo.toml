@@ -1,6 +1,6 @@
 [package]
 name = "leimu-mem"
-version = "0.4.1"
+version = "0.4.2"
 edition = "2024"
 description = "Custom allocator collections and utilities."
 license = "MIT OR Apache-2.0"

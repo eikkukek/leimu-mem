@@ -1,6 +1,6 @@
 use super::*;
 
-/// An arena guard returned by [`Arena`] guard methods.
+/// An arena guard returned by [`Arena`] `guard` methods.
 pub struct ArenaGuard<'a, F = False>
     where F: Conditional,
 {

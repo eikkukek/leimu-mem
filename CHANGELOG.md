@@ -1,5 +1,8 @@
 # Cangelog
 All changes to this project will be documented in this file
+## [0.4.2] - 2026-11-05
+### Changed
+- Improved docs.
 ## [0.4.1] - 2026-11-05
 ### Fixed
 - Docs.
@@ -82,6 +85,8 @@ All changes to this project will be documented in this file
 - Custom containers
 - Arena allocator implementation
 
+[0.4.2]: https://crates.io/crates/leimu-mem/0.4.2
+[0.4.1]: https://crates.io/crates/leimu-mem/0.4.1
 [0.4.0]: https://crates.io/crates/leimu-mem/0.4.0
 [0.3.2]: https://crates.io/crates/leimu-mem/0.3.2
 [0.3.1]: https://crates.io/crates/leimu-mem/0.3.1

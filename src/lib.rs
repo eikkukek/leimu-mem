@@ -11,11 +11,11 @@
 //! # Features
 //! ## `std` (enabled by default)
 //! Provides an implementation of [`LocalAlloc`] for the unit type `()` that uses
-//! [`std::alloc::alloc`] and [`std::alloc::dealloc`] for allocations and deallocations, and an
-//! [`arena`] allocator implementation, which can be used by these custom types.
+//! [`std::alloc::alloc`] and [`std::alloc::dealloc`] for allocations and deallocations, and a new
+//! allocator type [`Arena`][arena::Arena].
 //!
 //! When this feature is enabled, the [`slot_map`] and [`alloc_vec`] modules provide type aliases
-//! that uses this unit type implementation of [`LocalAlloc`] for its allocations.
+//! that uses this unit type implementation of [`LocalAlloc`] for their allocations.
 //!
 //! The `std` feature also provides a somewhat unrelated [`smallbox`] macro, which can be used to
 //! create "small box" types, which can store `dyn` trait objects inline without an additional heap
