@@ -1,7 +1,7 @@
 //! A library providing a custom allocator API through the [`LocalAlloc`] trait; a stable Rust version
 //! of the still unstable `std::alloc::Allocator` trait.
 //!
-//! This crate provides a vector and a slot map implementation that use the [`LocalAlloc`] trait for its
+//! This crate provides a vector and a slot map implementation that use the [`LocalAlloc`] trait for their
 //! allocations as well as utilities like [`alloc::pack`], which allocates arbitrarily aligned consecutive
 //! blocks of memory using [`LocalAlloc`].
 //!
