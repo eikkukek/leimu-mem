@@ -1,5 +1,8 @@
 # Cangelog
 All changes to this project will be documented in this file
+## [0.4.1] - 2026-11-05
+### Fixed
+- Docs.
 ## [0.4.0] - 2026-11-05
 
 ### Removed (breaking)
