@@ -1,4 +1,4 @@
-//! A compact slot map implementation with support for custom allocators.
+//! A slot map implementation that use [`LocalAlloc`] for its allocations.
 //!
 //! A slot map is a data structure similar to `Vec<Option<T>>` except each element in the map is
 //! associated with a version. When inserting a value to a slot map, the map returns a special index 

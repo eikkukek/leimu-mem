@@ -1,4 +1,4 @@
-//! Provides [`AllocVec`]: a new vector type which uses [`LocalAlloc`] for its allocations.
+//! Provides [`AllocVec`]; a new vector type which uses [`LocalAlloc`] for its allocations.
 
 mod buffer;
 
