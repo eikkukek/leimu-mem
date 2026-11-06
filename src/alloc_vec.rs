@@ -1345,7 +1345,6 @@ macro_rules! impl_slice_eq {
         [$($vars:tt)*]
         $lhs:ty,
         $rhs:ty $(,)?
-        $(where $($add_gen:ident: $add_bounds:ident)+)?
     ) => {
         impl<$($vars)*> PartialEq<$rhs> for $lhs
         {
