@@ -1,5 +1,8 @@
 # Cangelog
 All changes to this project will be documented in this file
+## unreleased
+### Changed
+- Small internal stuff.
 ## [0.4.2] - 2026-11-05
 ### Changed
 - Improved docs.
