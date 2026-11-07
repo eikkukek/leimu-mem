@@ -208,7 +208,7 @@ pub unsafe trait LocalAlloc
     /// returned to this allocator and any access to the old `ptr` is undefined behaviour.
     ///
     /// If this method returns [`Err`], the ownership of the memory block remains unchanged and the
-    /// contents memory block are unchanged.
+    /// contents of the memory block are unchanged.
     ///
     /// # Safety
     /// - `ptr` must point to a currently allocated block via this allocator
