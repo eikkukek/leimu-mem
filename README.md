@@ -8,7 +8,7 @@ allocations and simple utility modules `pack` and `iter`.
 Provides a simple arena/bump allocator type `Arena` and a somewhat unrelated `smallbox` macro.
 
 The `smallbox` macro can be used to create "small box" types, which can store `dyn` trait objects inline without
-an needing an extra allocation up to a given number of bytes similarily to how `SmallVec` stores a given number
+needing an extra allocation up to a given number of bytes similarily to how `SmallVec` stores a given number
 of elements inline.
 
 ## Usage
