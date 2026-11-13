@@ -37,17 +37,11 @@ use core::{
     marker::PhantomData,
 };
 
-use crate::conditional;
+use crate::{conditional, align_up};
 
 use portable_atomic as atomic;
 
 use atomic::{AtomicUsize, AtomicBool};
-
-/// (offset + align - 1) & !(align - 1)
-#[inline]
-pub const fn align_up(offset: usize, align: usize) -> usize {
-    (offset + align - 1) & !(align - 1)
-}
 
 use conditional::{Conditional, False, True};
 
@@ -205,7 +199,7 @@ impl<F: Conditional> Arena<F> {
             atomic::Ordering::Acquire,
             |pos|  {
                 let start = self.data.as_ptr().addr() + pos;
-                aligned_start = align_up(start, layout.align());
+                aligned_start = align_up!(start, layout.align());
                 let end = aligned_start + layout.size();
                 if end > self.data.as_ptr().addr() + self.capacity() {
                     return None
