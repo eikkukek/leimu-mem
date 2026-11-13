@@ -5,12 +5,12 @@
 //! - [`ReserveError`]: An error caused by reservation failure.
 
 use core::{
-    alloc::{Layout, LayoutError},
+    alloc::{AllocError, Layout, LayoutError},
     error::Error,
     fmt::{self, Debug, Display},
 };
 
-use crate::{alloc::AllocError, int::{FromUsize, IntoUsize, NonZeroInteger}};
+use crate::size::{Size, NonZeroSize};
 
 /// The type [`ReserveError`].
 #[derive(Debug)]
@@ -89,11 +89,10 @@ impl<T> ReserveError<T> {
 
     /// Creates a new allocation error.
     #[inline]
-    pub fn alloc_error<E>(err: E, value: T) -> Self
-        where E: Error + Send + Sync + 'static
+    pub fn alloc_error(value: T) -> Self
     {
         Self::new(
-            ReserveErrorKind::AllocError(AllocError::new(err)),
+            ReserveErrorKind::AllocError(AllocError),
             value,
         )
     }
@@ -110,8 +109,8 @@ impl<T> ReserveError<T> {
     /// Creates a new error indicating that the maximum capacity of a collection has been
     /// exceeded.
     #[inline]
-    pub fn max_capacity_exceeded<SizeType: IntoUsize>(
-        max_capacity: SizeType,
+    pub fn max_capacity_exceeded<S: Size>(
+        max_capacity: S,
         requested_capacity: usize,
         value: T,
     ) -> Self {
@@ -145,8 +144,8 @@ impl<T> ReserveError<T> {
 impl From<AllocError> for ReserveError<()> {
 
     #[inline]
-    fn from(value: AllocError) -> Self {
-        Self::alloc_error(value, ())
+    fn from(_: AllocError) -> Self {
+        Self::alloc_error(())
     }
 }
 
@@ -164,14 +163,14 @@ impl From<LayoutError> for ReserveError<()> {
 /// Implementing this trait is unsafe because the implementation must adhere to certain rules. For
 /// example, [`ReservePolicy::grow`] must never return a value that's less than `required`.
 pub unsafe trait ReservePolicy<S = usize>
-    where S: FromUsize + IntoUsize,
+    where S: Size,
 {
 
     /// The grow factor used when reallocation is needed.
     ///
     /// The factor is returned as a (numerator, denumerator) tuple and growth is by default
     /// calculated as `capacity.div_ceil(denumerator) * numerator`.
-    fn growth_factor() -> (S, impl NonZeroInteger<Base = S>);
+    fn growth_factor() -> (S, impl NonZeroSize<Base = S>);
 
     /// Returns whether the collection can grow.
     ///

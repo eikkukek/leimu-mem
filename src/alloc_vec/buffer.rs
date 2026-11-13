@@ -6,44 +6,44 @@ use core::{
 };
 
 use crate::{
-    int::{FromUsize, IntoUsize},
+    size::Size,
     reserve::ReserveError,
 };
 
 #[derive(Debug)]
-pub(crate) struct Buffer<T, SizeType = usize>
+pub(crate) struct Buffer<T, S = usize>
     where
         T: Sized,
-        SizeType: IntoUsize
+        S: Size
 {
     ptr: NonNull<T>,
-    len: SizeType,
-    capacity: SizeType,
+    len: S,
+    capacity: S,
 }
 
-impl<T: Sized, SizeType: IntoUsize + FromUsize> Buffer<T, SizeType> { 
+impl<T: Sized, S: Size> Buffer<T, S> { 
 
     #[inline]
-    pub fn new(allocation: (NonNull<u8>, usize)) -> Self {
+    pub fn new(allocation: NonNull<[u8]>) -> Self {
         if size_of::<T>() == 0 {
             return Self {
-                ptr: allocation.0.cast(),
-                len: SizeType::ZERO,
-                capacity: SizeType::ZERO,
+                ptr: allocation.cast(),
+                len: S::ZERO,
+                capacity: S::ZERO,
             }
         }
         Self {
-            ptr: allocation.0.cast(),
-            capacity: SizeType::from_usize(allocation.1 / size_of::<T>()),
-            len: SizeType::ZERO,
+            ptr: allocation.cast(),
+            capacity: S::from_usize(allocation.len() / size_of::<T>()),
+            len: S::ZERO,
         }
     }
 
     #[inline]
     pub const unsafe fn from_raw_parts(
         ptr: *mut T,
-        len: SizeType,
-        capacity: SizeType,
+        len: S,
+        capacity: S,
     ) -> Self {
         unsafe {
             Self {
@@ -57,8 +57,8 @@ impl<T: Sized, SizeType: IntoUsize + FromUsize> Buffer<T, SizeType> {
     #[inline]
     pub const unsafe fn from_parts(
         ptr: NonNull<T>,
-        len: SizeType,
-        capacity: SizeType,
+        len: S,
+        capacity: S,
     ) -> Self {
         Self {
             ptr,
@@ -71,8 +71,8 @@ impl<T: Sized, SizeType: IntoUsize + FromUsize> Buffer<T, SizeType> {
     pub const fn empty() -> Self {
         Self {
             ptr: NonNull::dangling(),
-            len: SizeType::ZERO,
-            capacity: SizeType::ZERO,
+            len: S::ZERO,
+            capacity: S::ZERO,
         }
     }
 
@@ -92,27 +92,27 @@ impl<T: Sized, SizeType: IntoUsize + FromUsize> Buffer<T, SizeType> {
     }
 
     #[inline]
-    pub const fn capacity(&self) -> SizeType {
+    pub const fn capacity(&self) -> S {
         self.capacity
     }
 
     #[inline]
-    pub const fn len(&self) -> SizeType {
+    pub const fn len(&self) -> S {
         self.len
     }
 
     #[inline]
-    pub const unsafe fn set_len(&mut self, len: SizeType) {
+    pub const unsafe fn set_len(&mut self, len: S) {
         self.len = len;
     }
    
     #[inline] 
     pub unsafe fn reallocate(
         &mut self,
-        new: (NonNull<u8>, usize)
+        new: NonNull<[u8]>,
     ) -> (NonNull<u8>, Layout) {
-        let ptr: NonNull<T> = new.0.cast();
-        let capacity = SizeType::from_usize(new.1 / size_of::<T>());
+        let ptr: NonNull<T> = new.cast();
+        let capacity = S::from_usize(new.len() / size_of::<T>());
         debug_assert!(
             capacity >= self.len,
             "new buffer's capacity {} doesn't fit this buffer's length {}",
@@ -136,9 +136,9 @@ impl<T: Sized, SizeType: IntoUsize + FromUsize> Buffer<T, SizeType> {
     #[inline] 
     pub fn deallocate(&mut self) -> Option<(NonNull<u8>, Layout)> {
         self.clear();
-        (self.capacity != SizeType::ZERO).then(|| unsafe {
+        (self.capacity != S::ZERO).then(|| unsafe {
             let cap = self.capacity();
-            self.capacity = SizeType::ZERO;
+            self.capacity = S::ZERO;
             (
                 self.as_non_null()
                     .cast(),
@@ -169,7 +169,7 @@ impl<T: Sized, SizeType: IntoUsize + FromUsize> Buffer<T, SizeType> {
             let res = self.ptr.add(index);
             res.copy_to(res.add(1), self.len.into_usize() - index);
             res.write(value);
-            self.len += SizeType::ONE;
+            self.len += S::ONE;
             Ok(res)
         }
     }
@@ -191,7 +191,7 @@ impl<T: Sized, SizeType: IntoUsize + FromUsize> Buffer<T, SizeType> {
                     self.len().into_usize() - index - 1
                 );
         }
-        self.len -= SizeType::ONE;
+        self.len -= S::ONE;
         removed
     }
 
@@ -205,7 +205,7 @@ impl<T: Sized, SizeType: IntoUsize + FromUsize> Buffer<T, SizeType> {
             )
         }
         let removed = unsafe { self.ptr.add(index).read() };
-        self.len -= SizeType::ONE;
+        self.len -= S::ONE;
         if index != self.len.into_usize() {
             unsafe { self.ptr.add(index).write(
                 self.ptr.add(self.len.into_usize()).read()
@@ -236,13 +236,13 @@ impl<T: Sized, SizeType: IntoUsize + FromUsize> Buffer<T, SizeType> {
         if first_dup == len {
             return
         }
-        struct Guard<'a, T: Sized, SizeType: IntoUsize + FromUsize> {
+        struct Guard<'a, T: Sized, S: Size> {
             read: usize,
             write: usize,
             ptr: NonNull<T>,
-            out_len: &'a mut SizeType,
+            out_len: &'a mut S,
         }
-        impl<'a, T: Sized, SizeType: IntoUsize + FromUsize> Drop for Guard<'a, T, SizeType> {
+        impl<'a, T: Sized, S: Size> Drop for Guard<'a, T, S> {
 
             fn drop(&mut self) {
                 unsafe {
@@ -252,7 +252,7 @@ impl<T: Sized, SizeType: IntoUsize + FromUsize> Buffer<T, SizeType> {
                     let dropped_ptr = ptr.add(self.write);
                     let valid_ptr = ptr.add(self.read);
                     ::core::ptr::copy_nonoverlapping(valid_ptr, dropped_ptr, left);
-                    *self.out_len = SizeType::from_usize(self.write + left + 1);
+                    *self.out_len = S::from_usize(self.write + left + 1);
                 }
             }
         }
@@ -277,7 +277,7 @@ impl<T: Sized, SizeType: IntoUsize + FromUsize> Buffer<T, SizeType> {
                 }
             }
         }
-        *guard.out_len = SizeType::from_usize(guard.write + 1);
+        *guard.out_len = S::from_usize(guard.write + 1);
         ::core::mem::forget(guard);
     }
 
@@ -290,13 +290,13 @@ impl<T: Sized, SizeType: IntoUsize + FromUsize> Buffer<T, SizeType> {
         if len == 0 {
             return
         }
-        struct Guard<'a, T, SizeType: IntoUsize + FromUsize> {
+        struct Guard<'a, T, S: Size> {
             read: usize,
             write: usize,
             ptr: NonNull<T>,
-            out_len: &'a mut SizeType,
+            out_len: &'a mut S,
         }
-        impl<T, SizeType: IntoUsize + FromUsize> Drop for Guard<'_, T, SizeType> {
+        impl<T, S: Size> Drop for Guard<'_, T, S> {
 
             fn drop(&mut self) {
                 unsafe {
@@ -306,7 +306,7 @@ impl<T: Sized, SizeType: IntoUsize + FromUsize> Buffer<T, SizeType> {
                     let read_ptr = ptr.add(self.read);
                     let write_ptr = ptr.add(self.write);
                     ::core::ptr::copy(read_ptr, write_ptr, remaining);
-                    *self.out_len = SizeType::from_usize(self.write + remaining);
+                    *self.out_len = S::from_usize(self.write + remaining);
                 }
             }
         }
@@ -334,9 +334,9 @@ impl<T: Sized, SizeType: IntoUsize + FromUsize> Buffer<T, SizeType> {
     }
 
     pub fn pop(&mut self) -> Option<T> {
-        if self.len == SizeType::ZERO { return None }
+        if self.len == S::ZERO { return None }
         unsafe {
-            self.set_len(self.len - SizeType::ONE);
+            self.set_len(self.len - S::ONE);
         }
         let ptr = unsafe { self.as_ptr().add(self.len().into_usize()) };
         Some(unsafe { ptr.read() })
@@ -346,13 +346,13 @@ impl<T: Sized, SizeType: IntoUsize + FromUsize> Buffer<T, SizeType> {
     pub fn clear(&mut self) {
         unsafe {
             debug_assert!(self.len() <= self.capacity());
-            if needs_drop::<T>() && self.capacity() == SizeType::ZERO {
+            if needs_drop::<T>() && self.capacity() == S::ZERO {
                 for i in (0..self.len.into_usize()).rev() {
-                    self.set_len(SizeType::from_usize(i));
+                    self.set_len(S::from_usize(i));
                     self.ptr.add(i).drop_in_place();
                 }
             }
-            self.set_len(SizeType::ZERO);
+            self.set_len(S::ZERO);
         }
     }
 }

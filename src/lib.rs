@@ -1,28 +1,17 @@
-//! A library providing a custom allocator API through the [`LocalAlloc`] trait; a stable Rust version
-//! of the still unstable `std::alloc::Allocator` trait.
-//!
-//! This crate provides a vector and a slot map implementation that use the [`LocalAlloc`] trait for their
-//! allocations as well as utilities like [`alloc::pack`], which allocates arbitrarily aligned consecutive
-//! blocks of memory using [`LocalAlloc`].
-//!
-//! The vector implementation can be found in the [`alloc_vec`] module and the slot map
-//! implementation is defined in the [`slot_map`] module.
+//! This crate provides a [vector] and a [slot map] implementation that use the [`Allocator`] trait for their
+//! allocations and simple utility modules [`pack`] and [`iter`].
 //!
 //! # Features
 //! ## `std` (enabled by default)
-//! Provides an implementation of [`LocalAlloc`] for the unit type `()` that uses
-//! [`std::alloc::alloc`] and [`std::alloc::dealloc`] for allocations and deallocations, and a new
-//! allocator type [`Arena`][arena::Arena].
+//! Provides a simple arena/bump allocator type [`Arena`][arena::Arena] and a somewhat unrelated [`smallbox`] macro.
 //!
-//! When this feature is enabled, the [`slot_map`] and [`alloc_vec`] modules provide type aliases
-//! that uses this unit type implementation of [`LocalAlloc`] for their allocations.
+//! The [`smallbox`] macro can be used to create "small box" types, which can store `dyn` trait objects inline without
+//! an needing an extra allocation up to a given number of bytes similarily to how `SmallVec` stores a given number
+//! of elements inline.
 //!
-//! The `std` feature also provides a somewhat unrelated [`smallbox`] macro, which can be used to
-//! create "small box" types, which can store `dyn` trait objects inline without an additional heap
-//! allocation up to a given number of bytes similarily to how `SmallVec` stores a given number of elements
-//! inline.
-//!
-//! [`LocalAlloc`]: alloc::LocalAlloc
+//! [vector]: alloc_vec
+//! [slot map]: slot_map
+//! [`Allocator`]: std::alloc::Allocator
 //!
 //! # Usage
 //! ```
@@ -49,9 +38,6 @@
 //! assert!(matches!(slot_map.get(key2), Ok(&"bar")));
 //! # }
 //! ```
-//!
-//! [1]: alloc::LocalAlloc
-//! [3]: slot_map
 
 #![no_std]
 
@@ -63,10 +49,10 @@ extern crate std;
 
 pub mod conditional;
 pub mod reserve;
-pub mod int;
+pub mod size;
+pub mod pack;
 pub mod alloc_vec;
 pub mod slot_map;
-pub mod alloc;
 #[cfg(feature = "std")]
 pub mod arena;
 #[cfg(feature = "std")]
@@ -76,9 +62,6 @@ pub mod iter;
 mod tests;
 
 mod macros;
-mod const_fn;
-
-pub use const_fn::*;
 
 #[doc = include_str!("../README.md")]
 #[cfg(doctest)]

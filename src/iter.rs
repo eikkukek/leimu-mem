@@ -6,23 +6,20 @@
 //!
 //! [1]: CollectIn::collect_in
 
-use crate::{
-    alloc::LocalAlloc,
-    reserve::{ReserveError},
-};
+use core::alloc::{Allocator, AllocError};
 
 /// Conversion from an iterator and an allocator.
 pub trait FromIteratorIn<T>: Sized
 {
 
     /// The allocator used by self.
-    type Alloc: LocalAlloc;
+    type Alloc: Allocator;
 
     /// Creates a value from an iterator and an allocator.
     fn from_iter_in<I>(
         iter: I,
-        allocator: Self::Alloc,
-    ) -> Result<Self, ReserveError<()>>
+        alloc: Self::Alloc,
+    ) -> Result<Self, AllocError>
         where
             I: IntoIterator<Item = T>,
             I::IntoIter: ExactSizeIterator;
@@ -39,6 +36,7 @@ pub trait CollectIn: Iterator {
     /// ```
     /// # #[cfg(feature = "std")]
     /// # {
+    /// use core::alloc::Allocator;
     /// use leimu_mem::arena::Arena;
     /// use leimu_mem::alloc_vec::FixedVec;
     /// use leimu_mem::iter::CollectIn;
@@ -50,15 +48,43 @@ pub trait CollectIn: Iterator {
     /// assert_eq!(vec, [0, 1, 2, 3, 4]);
     /// # }
     /// ```
-    fn collect_in<T>(self, allocator: T::Alloc) -> Result<T, ReserveError<()>>
+    fn collect_in<T>(self, alloc: T::Alloc) -> Result<T, AllocError>
         where
             T: FromIteratorIn<Self::Item>,
             Self: Sized + ExactSizeIterator,
     {
-        T::from_iter_in(self, allocator)
+        T::from_iter_in(self, alloc)
     }
 }
 
 impl<T> CollectIn for T
     where T: Iterator
 {}
+
+#[cfg(feature = "std")]
+mod std_impl {
+
+    use super::*;
+
+    use std::vec::Vec;
+
+    impl<T, A: Allocator> FromIteratorIn<T> for Vec<T, A> {
+
+        type Alloc = A;
+
+        fn from_iter_in<I>(
+            iter: I,
+            alloc: Self::Alloc,
+        ) -> Result<Self, AllocError>
+            where
+                I: IntoIterator<Item = T>,
+                I::IntoIter: ExactSizeIterator
+        {
+            let iter = iter.into_iter();
+            let mut vec = Vec::new_in(alloc);
+            vec.try_reserve(iter.len()).map_err(|_| AllocError)?;
+            vec.extend(iter);
+            Ok(vec)
+        }
+    }
+}

@@ -1,24 +1,15 @@
 # [leimu-mem]
-A library providing a custom allocator API through the `LocalAlloc` trait; a stable Rust version
-of the still unstable `std::alloc::Allocator` trait.
 
-This crate provides a vector and a slot map implementation that use the `LocalAlloc` trait for their
-allocations as well as utilities like `alloc::pack`, which allocates arbitrarily aligned consecutive
-blocks of memory using `LocalAlloc`.
+This crate provides a vector and a slot map implementation that use the `Allocator` trait for their
+allocations and simple utility modules `pack` and `iter`.
 
 ##  Features
 ### `std` (enabled by default)
-Provides an implementation of `LocalAlloc` for the unit type `()` that uses
-`std::alloc::alloc` and `std::alloc::dealloc` for allocations and deallocations, and a new
-allocator type `Arena`.
+Provides a simple arena/bump allocator type `Arena` and a somewhat unrelated `smallbox` macro.
 
-When this feature is enabled, the `slot_map` and `alloc_vec` modules provide type aliases
-that uses this unit type implementation of `LocalAlloc` for their allocations.
-
-The `std` feature also provides a somewhat unrelated `smallbox` macro, which can be used to
-create "small box" types, which can store `dyn` trait objects inline without an additional heap
-allocation up to a given number of bytes similarily to how `SmallVec` stores a given number of elements
-inline.
+The `smallbox` macro can be used to create "small box" types, which can store `dyn` trait objects inline without
+an needing an extra allocation up to a given number of bytes similarily to how `SmallVec` stores a given number
+of elements inline.
 
 ## Usage
 ``` rust

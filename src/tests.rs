@@ -46,11 +46,10 @@ fn collect_in() -> Result<(), reserve::ReserveError<()>> {
 #[test]
 fn stack_alloc() -> Result<(), reserve::ReserveError<()>> {
     use core::{
+        alloc::*,
         ptr::NonNull,
         sync::atomic::{self, AtomicUsize},
-        fmt::{self, Display},
     };
-    use alloc::*;
     use alloc_vec::FixedVec;
     struct MyAllocator {
         data: [u8; 512],
@@ -62,37 +61,30 @@ fn stack_alloc() -> Result<(), reserve::ReserveError<()>> {
             Self { data: [0; 512], pos: AtomicUsize::new(0) }
         }
     }
-    #[derive(Debug)]
-    struct Error;
-    impl Display for Error {
+    unsafe impl Allocator for MyAllocator {
 
-        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            "capacity of 512 exceeded".fmt(f)
-        }
-    }
-    impl core::error::Error for Error {}
-    unsafe impl LocalAlloc for MyAllocator {
-
-        fn allocate(&self, layout: Layout) -> Result<(NonNull<u8>, usize), AllocError> {
+        fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
             let mut aligned_start = 0;
             self.pos.try_update(
                 atomic::Ordering::AcqRel,
                 atomic::Ordering::Acquire,
                 |pos|  {
                     let start = self.data.as_ptr() as usize + pos;
-                    aligned_start = align_up(start, layout.align());
+                    aligned_start = align_up!(start, layout.align());
                     let end = aligned_start + layout.size();
                     if end > self.data.as_ptr() as usize + 512 {
                         return None
                     }
                     Some(end - self.data.as_ptr() as usize)
                 }
-            ).map_err(|_| AllocError::new(Error))?;
+            ).map_err(|_| AllocError)?;
             unsafe {
-                Ok((
-                    NonNull::new_unchecked(aligned_start as *mut u8),
-                    layout.size(),
-                ))
+                Ok(
+                    NonNull::slice_from_raw_parts(
+                        NonNull::new_unchecked(aligned_start as *mut u8),
+                        layout.size(),
+                    ),
+                )
             }
         }
 

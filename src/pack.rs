@@ -1,9 +1,8 @@
-//! [`pack_alloc`] API.
-//!
-//! Provides the [`pack_alloc`] and [`pack_block`] functions, which can be used to allocate data as
-//! contiguously as possible.
+//! Provides a simple function [`pack_alloc`], which allocates arbitrarily aligned blocks of memory
+//! as contiguously possible in a single allocation.
 
 use core::{
+    alloc::*,
     fmt::Display,
     error::Error,
     num::NonZero,
@@ -11,8 +10,6 @@ use core::{
 };
 
 use crate::align_up;
-
-use super::*;
 
 trait Ptr {
 
@@ -95,7 +92,8 @@ pub fn pack_block<T>(
     })
 }
 
-/// Allocates data as contiguously as possible.
+/// Allocates arbitrarily aligned data as contiguously as possible, ensuring that each block is
+/// properly aligned.
 ///
 /// On success returns a ([`NonNull<u8>`], [`Layout`]) tuple containing the base pointer and layout
 /// of the allocation.
@@ -106,24 +104,23 @@ pub fn pack_block<T>(
 ///
 /// This function makes exactly one allocation with `allocator`.
 ///
-/// [1]: LocalAlloc::deallocate
+/// [1]: Allocator::deallocate
 ///
 /// # Examples
 /// ``` 
 /// # #[cfg(feature = "std")]
 /// # {
+/// use core::alloc::Allocator;
 /// use core::ptr::NonNull;
-///
 /// use leimu_mem::arena::Arena;
-/// use leimu_mem::alloc::{pack_alloc, pack_block};
-/// use leimu_mem::alloc::LocalAlloc;
+/// use leimu_mem::pack::{pack_alloc, pack_block};
 /// 
 /// let allocator = Arena::new(512).unwrap();
 ///
 /// let mut pack1 = NonNull::dangling();
 /// let mut pack2 = NonNull::dangling();
 /// let (ptr, layout) = pack_alloc(
-///     &allocator, // Can be any allocator implementing LocalAlloc.
+///     &allocator, // Can be any allocator implementing `Allocator`.
 ///     [
 ///         pack_block(&mut pack1, 10).unwrap(), // Allocates 10 `u8`.
 ///         pack_block(&mut pack2, 1).unwrap(), // Allocates 1 `String`.
@@ -140,10 +137,10 @@ pub fn pack_block<T>(
 /// # }
 /// ```
 pub fn pack_alloc<A, const N: usize>(
-    allocator: &A,
+    alloc: &A,
     mut blocks: [PackBlock; N],
 ) -> Result<(NonNull<u8>, Layout), PackAllocError>
-    where A: LocalAlloc + ?Sized,
+    where A: Allocator + ?Sized,
 {
     let mut align = 1;
     let mut size = 0;
@@ -156,14 +153,14 @@ pub fn pack_alloc<A, const N: usize>(
             pack_offs.get_unchecked_mut(i)
         };
         align = align.max(block.layout.align());
-        size = align_up(size, block.layout.align());
+        size = align_up!(size, block.layout.align());
         *off = size;
         size += block.layout.size();
     }
     let layout = Layout::from_size_align(
         size, align
     )?;
-    let ptr = allocator.allocate(layout)?.0;
+    let ptr = alloc.allocate(layout)?.cast();
     let addr = ptr.addr().get();
     for i in 0..N {
         let block = unsafe {

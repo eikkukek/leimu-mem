@@ -1,4 +1,4 @@
-//! Simple type-level conditionals.
+//! Type-level conditionals.
 //!
 //! # New types
 //! - [`True`] and [`False`]: Represent `true` and `false` at a type level.

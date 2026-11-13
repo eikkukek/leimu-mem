@@ -1,8 +1,10 @@
 # Cangelog
 All changes to this project will be documented in this file
-## unreleased
-### Changed
-- Small internal stuff.
+## [0.5.0]
+### Removed
+- `LocalAlloc` in favor of the now stable `Allocator` trait.
+### Removed
+- `align_{up, down}_u64`
 ## [0.4.2] - 2026-11-05
 ### Changed
 - Improved docs.
@@ -88,6 +90,7 @@ All changes to this project will be documented in this file
 - Custom containers
 - Arena allocator implementation
 
+[0.5.0]: https://crates.io/crates/leimu-mem/0.5.0
 [0.4.2]: https://crates.io/crates/leimu-mem/0.4.2
 [0.4.1]: https://crates.io/crates/leimu-mem/0.4.1
 [0.4.0]: https://crates.io/crates/leimu-mem/0.4.0

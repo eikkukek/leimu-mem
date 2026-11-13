@@ -1,3 +1,19 @@
+/// Produces the expresssion `(offset + align - 1) & !(align - 1)`.
+#[macro_export]
+macro_rules! align_up {
+    ($offset:expr, $align:expr) => {
+        ($offset + $align - 1) & !($align - 1)
+    };
+}
+
+/// Produces the expresssion `offset & !(align - 1)`.
+#[macro_export]
+macro_rules! align_down {
+    ($offset:expr, $align:expr $(,)?) => {
+        $offset & !($align - 1)
+    };
+}
+
 macro_rules! impl_traits {
     (
         for $type:ident $(<$($gen:tt $(: [$($bounds:tt)*])? $([$gen_q:ident])?),*>)?

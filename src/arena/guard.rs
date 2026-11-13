@@ -1,6 +1,6 @@
 use super::*;
 
-/// An arena guard returned by [`Arena`] `guard` methods.
+/// An arena guard returned by [`Arena`] guard methods.
 pub struct ArenaGuard<'a, F = False>
     where F: Conditional,
 {
@@ -20,10 +20,10 @@ impl<'a, F> ArenaGuard<'a, F>
         }
     }
 
-    /// Returns the total size of the parent arena.
+    /// Returns the total capacity of this guard.
     #[inline]
     pub fn capacity(&self) -> usize {
-        self.arena.capacity()
+        self.arena.capacity() - self.pos_rollback
     }
 
     /// Returns how many bytes has been allocated since the guard was created.
@@ -47,11 +47,11 @@ impl<'a, F> ArenaGuard<'a, F>
     }
 }
 
-unsafe impl<'a> LocalAlloc for ArenaGuard<'a, False>
+unsafe impl<'a> Allocator for ArenaGuard<'a, False>
 {
 
     #[inline]
-    fn allocate(&self, layout: Layout) -> Result<(NonNull<u8>, usize), AllocError> {
+    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         self.arena.allocate_internal(layout)
     }
 
@@ -63,7 +63,7 @@ unsafe impl<'a> LocalAlloc for ArenaGuard<'a, False>
         ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
-    ) -> Result<(NonNull<u8>, usize), AllocError>
+    ) -> Result<NonNull<[u8]>, AllocError>
     {
         unsafe {
             self.arena.shrink_internal(ptr, old_layout, new_layout)
@@ -71,11 +71,11 @@ unsafe impl<'a> LocalAlloc for ArenaGuard<'a, False>
     }
 }
 
-unsafe impl<'a> LocalAlloc for ArenaGuard<'a, True>
+unsafe impl<'a> Allocator for ArenaGuard<'a, True>
 {
 
     #[inline]
-    fn allocate(&self, layout: Layout) -> Result<(NonNull<u8>, usize), AllocError> {
+    fn allocate(&self, layout: Layout) -> Result<NonNull<[u8]>, AllocError> {
         self.arena.allocate_internal(layout)
     }
 
@@ -92,7 +92,7 @@ unsafe impl<'a> LocalAlloc for ArenaGuard<'a, True>
         ptr: NonNull<u8>,
         old_layout: Layout,
         new_layout: Layout,
-    ) -> Result<(NonNull<u8>, usize), AllocError>
+    ) -> Result<NonNull<[u8]>, AllocError>
     {
         unsafe {
             self.arena.shrink_internal(ptr, old_layout, new_layout)

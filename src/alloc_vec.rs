@@ -1,9 +1,14 @@
-//! Provides [`AllocVec`]; a new vector type which uses [`LocalAlloc`] for its allocations.
+//! A vector implementation that uses [`Allocator`] for its allocations.
+//!
+//! Provides more flexibility than [`std::vec::Vec`] through the the [`ReservePolicy`] trait,
+//! which controls how fast a collection grows (if at all).
+//!
+//! It can also
 
 mod buffer;
 
 use core::{
-    alloc::Layout,
+    alloc::{Layout, Allocator, AllocError},
     borrow::{Borrow, BorrowMut},
     fmt::{Debug, Display},
     hash::{Hash, Hasher},
@@ -18,8 +23,7 @@ use core::{
 
 use crate::{
     reserve::*,
-    int::{FromUsize, IntoUsize, NonZeroInteger},
-    alloc::LocalAlloc,
+    size::{Size, NonZeroSize},
     iter::FromIteratorIn,
 };
 
@@ -31,7 +35,7 @@ pub struct DynPolicy;
 unsafe impl ReservePolicy for DynPolicy {
 
     #[inline]
-    fn growth_factor() -> (usize, impl NonZeroInteger<Base = usize>) {
+    fn growth_factor() -> (usize, impl NonZeroSize<Base = usize>) {
         (2, NonZeroUsize::ONE)
     }
 
@@ -56,7 +60,7 @@ pub struct FixedPolicy;
 unsafe impl ReservePolicy for FixedPolicy {
 
 
-    fn growth_factor() -> (usize, impl NonZeroInteger<Base = usize>) {
+    fn growth_factor() -> (usize, impl NonZeroSize<Base = usize>) {
         (0, NonZeroUsize::ONE)
     }
 
@@ -85,7 +89,7 @@ pub struct FixedPolicy32;
 unsafe impl ReservePolicy<u32> for DynPolicy32 {
 
     #[inline]
-    fn growth_factor() -> (u32, impl NonZeroInteger<Base = u32>) {
+    fn growth_factor() -> (u32, impl NonZeroSize<Base = u32>) {
         (2, NonZeroU32::ONE)
     }
 
@@ -113,7 +117,7 @@ unsafe impl ReservePolicy<u32> for DynPolicy32 {
 unsafe impl ReservePolicy<u32> for FixedPolicy32 {
 
     #[inline]
-    fn growth_factor() -> (u32, impl NonZeroInteger<Base = u32>) {
+    fn growth_factor() -> (u32, impl NonZeroSize<Base = u32>) {
         (0, NonZeroU32::ONE)
     }
 
@@ -143,10 +147,10 @@ unsafe impl ReservePolicy<u32> for FixedPolicy32 {
     }
 }
 
-/// A vector type, which uses a [`local, owned allocator`][1] for its allocations.
+/// A vector type, which uses a [`Allocator`] for its allocations.
 ///
 /// It is recommended to use one of its derivatives ([`DynVec`], [`FixedVec`], [`DynVec32`] and
-/// [`FixedVec32`]) when using it with a local allocator.
+/// [`FixedVec32`]) instead of directly.
 ///
 /// # Examples
 /// ```
@@ -163,36 +167,34 @@ unsafe impl ReservePolicy<u32> for FixedPolicy32 {
 /// assert_eq!(vec, [1, 2, 3, 4, 5]);
 /// # }
 /// ```
-///
-/// [1]: LocalAlloc
 pub struct AllocVec<T, A, R, S = usize>
     where
         T: Sized,
-        A: LocalAlloc,
+        A: Allocator,
         R: ReservePolicy<S>,
-        S: IntoUsize + FromUsize,
+        S: Size,
 {
     buf: Buffer<T, S>,
-    allocator: A,
+    alloc: A,
     _markers: PhantomData<R>,
 }
 
-/// A vector using [`LocalAlloc`], which can reallocate.
+/// A vector using [`Allocator`], which can reallocate.
 ///
 /// See [`AllocVec`] for full description and examples.
 pub type DynVec<T, A> = AllocVec<T, A, DynPolicy, usize>;
-/// A vector using [`LocalAlloc`], which can reallocate.
+/// A vector using [`Allocator`], which can reallocate.
 ///
 /// Stores its capacity and length as [`u32`].
 ///
 /// See [`AllocVec`] for full description and examples.
 pub type DynVec32<T, A> = AllocVec<T, A, DynPolicy32, u32>;
 
-/// A vector using [`LocalAlloc`], which won't reallocate.
+/// A vector using [`Allocator`], which won't reallocate.
 ///
 /// See [`AllocVec`] for full description and examples.
 pub type FixedVec<T, A> = AllocVec<T, A, FixedPolicy, usize>;
-/// A vector using [`LocalAlloc`], which won't reallocate.
+/// A vector using [`Allocator`], which won't reallocate.
 ///
 /// Stores its capacity and length as [`u32`].
 ///
@@ -202,16 +204,16 @@ pub type FixedVec32<T, A> = AllocVec<T, A, FixedPolicy32, u32>;
 impl<T, A, R, S> AllocVec<T, A, R, S>
     where
         T: Sized,
-        A: LocalAlloc,
+        A: Allocator,
         R: ReservePolicy<S>,
-        S: IntoUsize + FromUsize
+        S: Size,
 {
     /// Creates a new empty vector with an allocator.
     #[inline]
-    pub const fn new_in(allocator: A) -> Self {
+    pub const fn new_in(alloc: A) -> Self {
         Self {
             buf: Buffer::empty(),
-            allocator,
+            alloc,
             _markers: PhantomData,
         }
     }
@@ -225,20 +227,20 @@ impl<T, A, R, S> AllocVec<T, A, R, S>
     /// [1]: ReservePolicy
     pub fn with_capacity_in(
         capacity: S,
-        allocator: A,
+        alloc: A,
     ) -> Result<Self, ReserveError<()>> {
         if capacity == S::ZERO {
-            return Ok(Self::new_in(allocator))
+            return Ok(Self::new_in(alloc))
         }
         let capacity = R::grow_infallible(capacity, capacity.into_usize());
         let layout = Layout::array::<T>(capacity.into_usize())?;
         let buf = Buffer::new(
-            allocator
+            alloc
                 .allocate(layout)?,
         );
         Ok(Self {
             buf,
-            allocator,
+            alloc,
             _markers: PhantomData,
         })
     }
@@ -251,17 +253,17 @@ impl<T, A, R, S> AllocVec<T, A, R, S>
     pub fn with_len_with_in<F>(
         len: S,
         mut f: F,
-        allocator: A,
+        alloc: A,
     ) -> Result<Self, ReserveError<()>>
         where F: FnMut(S) -> T
     {
         if len == S::ZERO {
-            return Ok(Self::new_in(allocator))
+            return Ok(Self::new_in(alloc))
         }
         let capacity = R::grow_infallible(len, len.into_usize());
         let layout = Layout::array::<T>(capacity.into_usize())?;
         let mut buf = Buffer::<T, S>::new(
-            allocator
+            alloc
                 .allocate(layout)?,
         );
         let ptr = buf.as_mut_ptr();
@@ -273,7 +275,7 @@ impl<T, A, R, S> AllocVec<T, A, R, S>
         }
         Ok(Self {
             buf,
-            allocator,
+            alloc,
             _markers: PhantomData,
         })
     }
@@ -288,12 +290,12 @@ impl<T, A, R, S> AllocVec<T, A, R, S>
     pub fn with_len_in(
         len: S,
         value: T,
-        allocator: A,
+        alloc: A,
     ) -> Result<Self, ReserveError<()>>
         where
             T: Clone
     {
-        Self::with_len_with_in(len, |_| value.clone(), allocator)
+        Self::with_len_with_in(len, |_| value.clone(), alloc)
     }
 
     /// Creates a vector from a slice over `T`. and an allocator by [`cloning`][Clone] each element
@@ -308,13 +310,13 @@ impl<T, A, R, S> AllocVec<T, A, R, S>
     #[inline]
     pub fn from_slice_in(
         slice: &[T],
-        allocator: A,
+        alloc: A,
     ) -> Result<Self, ReserveError<()>>
         where T: Clone
     {
         let mut vec = Self::with_capacity_in(
             S::from_usize(slice.len()),
-            allocator
+            alloc
         )?;
         vec.extend_from_slice(slice);
         Ok(vec)
@@ -332,13 +334,13 @@ impl<T, A, R, S> AllocVec<T, A, R, S>
     #[inline]
     pub fn from_slice_copy_in(
         slice: &[T],
-        allocator: A,
+        alloc: A,
     ) -> Result<Self, ReserveError<()>>
         where T: Copy
     {
         let mut vec = Self::with_capacity_in(
             S::from_usize(slice.len()),
-            allocator
+            alloc
         )?;
         vec.extend_from_slice_copy(slice);
         Ok(vec)
@@ -354,7 +356,7 @@ impl<T, A, R, S> AllocVec<T, A, R, S>
     /// [1]: Iterator::size_hint
     pub fn from_iter_in<I>(
         iter: I,
-        allocator: A,
+        alloc: A,
     ) -> Result<Self, ReserveError<()>>
         where I: IntoIterator<Item = T>
     {
@@ -362,7 +364,7 @@ impl<T, A, R, S> AllocVec<T, A, R, S>
         let size_hint = iter.size_hint();
         let mut vec = Self::with_capacity_in(
             S::from_usize(size_hint.1.unwrap_or(size_hint.0)),
-            allocator
+            alloc
         )?;
         vec.extend(iter);
         Ok(vec)
@@ -373,7 +375,7 @@ impl<T, A, R, S> AllocVec<T, A, R, S>
     /// Requires that `T` implements [`Clone`].
     pub fn flattened_in<U>(
         slices: &[U],
-        allocator: A,
+        alloc: A,
     ) -> Result<Self, ReserveError<()>>
         where
             U: AsRef<[T]>,
@@ -384,7 +386,7 @@ impl<T, A, R, S> AllocVec<T, A, R, S>
             .map(|s| s.as_ref().len())
             .sum();
         let mut vec = Self::with_capacity_in(
-            S::from_usize(capacity), allocator
+            S::from_usize(capacity), alloc
         )?;
         vec.extend(slices
             .iter()
@@ -400,9 +402,9 @@ impl<T, A, R, S> AllocVec<T, A, R, S>
 
 impl<T, A, R, S> AllocVec<T, A, R, S>
     where
-        A: LocalAlloc,
+        A: Allocator,
         R: ReservePolicy<S>,
-        S: IntoUsize + FromUsize,
+        S: Size,
 {
 
     /// Creates a new [`AllocVec`] directly from a pointer, a length, a capacity and an allocator.
@@ -432,7 +434,7 @@ impl<T, A, R, S> AllocVec<T, A, R, S>
                     len,
                     capacity
                 ),
-                allocator: alloc,
+                alloc,
                 _markers: PhantomData,
             }
         } 
@@ -461,7 +463,7 @@ impl<T, A, R, S> AllocVec<T, A, R, S>
         unsafe {
             Self {
                 buf: Buffer::from_parts(ptr, len, capacity),
-                allocator: alloc,
+                alloc,
                 _markers: PhantomData,
             }
         } 
@@ -481,7 +483,7 @@ impl<T, A, R, S> AllocVec<T, A, R, S>
             vec.as_mut_ptr(),
             vec.len(),
             vec.capacity(),
-            unsafe {::core::ptr::read(&vec.allocator) },
+            unsafe {::core::ptr::read(&vec.alloc) },
         )
     }
 
@@ -516,7 +518,7 @@ impl<T, A, R, S> AllocVec<T, A, R, S>
             unsafe { NonNull::new_unchecked(vec.as_mut_ptr()) },
             vec.len(),
             vec.capacity(),
-            unsafe {::core::ptr::read(&vec.allocator) },
+            unsafe {::core::ptr::read(&vec.alloc) },
         )
     }
 
@@ -539,32 +541,32 @@ impl<T, A, R, S> AllocVec<T, A, R, S>
 }
 
 /// An iterator that moves out of the vector.
-pub struct IntoIter<T, A: LocalAlloc, S: IntoUsize + FromUsize> {
+pub struct IntoIter<T, A: Allocator, S: Size> {
     ptr: NonNull<T>,
     capacity: S,
     start: S,
     end: S,
-    allocator: A,
+    alloc: A,
 }
 
 unsafe impl<T, A, S> Send for IntoIter<T, A, S> 
     where
         T: Send,
-        A: LocalAlloc,
-        S: IntoUsize + FromUsize,
+        A: Allocator,
+        S: Size,
 {}
 
 unsafe impl<T, A, S> Sync for IntoIter<T, A, S> 
     where
         T: Sync,
-        A: LocalAlloc,
-        S: IntoUsize + FromUsize,
+        A: Allocator,
+        S: Size,
 {}
 
 impl<T, A, S> Iterator for IntoIter<T, A, S>
     where 
-        A: LocalAlloc,
-        S: IntoUsize + FromUsize,
+        A: Allocator,
+        S: Size,
 {
 
     type Item = T;
@@ -590,8 +592,8 @@ impl<T, A, S> Iterator for IntoIter<T, A, S>
 
 impl<T, A, S> DoubleEndedIterator for IntoIter<T, A, S>
     where
-        S: IntoUsize + FromUsize,
-        A: LocalAlloc,
+        S: Size,
+        A: Allocator,
 {
 
     fn next_back(&mut self) -> Option<Self::Item> {
@@ -609,14 +611,14 @@ impl<T, A, S> DoubleEndedIterator for IntoIter<T, A, S>
 
 impl<T, A, S> ExactSizeIterator for IntoIter<T, A, S>
     where
-        S: IntoUsize + FromUsize,
-        A: LocalAlloc,
+        S: Size,
+        A: Allocator,
 {}
 
 impl<T, A, S> Drop for IntoIter<T, A, S>
     where
-        S: IntoUsize + FromUsize,
-        A: LocalAlloc,
+        S: Size,
+        A: Allocator,
 {
 
     fn drop(&mut self) {
@@ -627,7 +629,7 @@ impl<T, A, S> Drop for IntoIter<T, A, S>
                     .add(i)
                     .drop_in_place();
             }
-            self.allocator
+            self.alloc
                 .deallocate(
                     self.ptr.cast(),
                     Layout::array::<T>(self.capacity.into_usize()).unwrap()
@@ -638,15 +640,15 @@ impl<T, A, S> Drop for IntoIter<T, A, S>
 
 impl<T, A, R, S> AllocVec<T, A, R, S>
     where
-        A: LocalAlloc,
+        A: Allocator,
         R: ReservePolicy<S>,
-        S: IntoUsize + FromUsize,
+        S: Size,
 {
 
-    /// Returns a reference to the underlying [`allocator`][LocalAlloc].
+    /// Returns a reference to the underlying [allocator][Allocator].
     #[inline]
     pub fn allocator(&self) -> &A {
-        &self.allocator
+        &self.alloc
     }
 
     /// Returns the length of the vector.
@@ -742,7 +744,7 @@ impl<T, A, R, S> AllocVec<T, A, R, S>
             .expect("layout error");
         let mut new_buf = unsafe {
             Buffer::new(
-                self.allocator
+                self.alloc
                     .shrink(
                         old_ptr.cast(),
                         Layout::array::<T>(self.capacity().into_usize())
@@ -813,14 +815,14 @@ impl<T, A, R, S> AllocVec<T, A, R, S>
         Self::_try_reserve_exact(
             &mut self.buf,
             new_capacity,
-            &self.allocator
+            &self.alloc
         )
     }
 
     fn _try_reserve_exact(
         buf: &mut Buffer<T, S>,
         new_capacity: S,
-        allocator: &A,
+        alloc: &A,
     ) -> Result<(), ReserveError<()>> {
         let capacity = buf.capacity();
         if new_capacity <= capacity { return Ok(()) }
@@ -830,11 +832,11 @@ impl<T, A, R, S> AllocVec<T, A, R, S>
             ))
         }
         debug_assert!(buf.len() <= buf.capacity());
-        let (ptr, layout) = unsafe { buf.reallocate(allocator
+        let (ptr, layout) = unsafe { buf.reallocate(alloc
             .allocate(Layout::array::<T>(new_capacity.into_usize())?)?
         ) };
         if layout.size() != 0 {
-            unsafe { allocator.deallocate(ptr, layout); }
+            unsafe { alloc.deallocate(ptr, layout); }
         }
         Ok(())
     }
@@ -955,7 +957,7 @@ impl<T, A, R, S> AllocVec<T, A, R, S>
                     Self::_try_reserve_exact(
                         buf,
                         new_capacity,
-                        &self.allocator
+                        &self.alloc
                     )
                 }
             ).expect("failed to reserve one")
@@ -998,7 +1000,7 @@ impl<T, A, R, S> AllocVec<T, A, R, S>
                     Self::_try_reserve_exact(
                         buf,
                         new_capacity,
-                        &self.allocator
+                        &self.alloc
                     )
                 }
             ).expect("failed to reserve one")
@@ -1152,16 +1154,16 @@ impl<T, A, R, S> AllocVec<T, A, R, S>
 crate::macros::impl_traits!{
     for AllocVec<
         T: [Sized],
-        A: [LocalAlloc],
+        A: [Allocator],
         R: [ReservePolicy<S>],
-        S: [IntoUsize + FromUsize]
+        S: [Size]
     >
     Drop =>
 
         fn drop(&mut self) {
             if let Some((ptr, layout)) = self.buf.deallocate() {
                 unsafe {
-                    self.allocator
+                    self.alloc
                         .deallocate(ptr, layout);
                 }
             }
@@ -1245,7 +1247,7 @@ crate::macros::impl_traits!{
                     capacity: vec.capacity(),
                     start: S::ZERO,
                     end: vec.len(),
-                    allocator: (::core::ptr::read(&vec.allocator)),
+                    alloc: (::core::ptr::read(&vec.alloc)),
                 }
             }
         }
@@ -1287,9 +1289,9 @@ crate::macros::impl_traits!{
 impl<T, A, R, S> Extend<T>
     for AllocVec<T, A, R, S>
     where
-        A: LocalAlloc,
+        A: Allocator,
         R: ReservePolicy<S>,
-        S: IntoUsize + FromUsize,
+        S: Size,
 {
 
     fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
@@ -1310,9 +1312,9 @@ impl<T, A, R, S> Extend<T>
 impl<T, A, R, S> Ord for AllocVec<T, A, R, S>
     where
         T: Ord,
-        A: LocalAlloc,
+        A: Allocator,
         R: ReservePolicy<S>,
-        S: IntoUsize + FromUsize,
+        S: Size,
 {
 
     #[inline]
@@ -1326,12 +1328,12 @@ impl<T, A1, R1, S1, A2, R2, S2> PartialOrd<AllocVec<T, A1, R1, S1>>
     for AllocVec<T, A2, R2, S2>
     where
         T: PartialOrd,
-        A1: LocalAlloc,
+        A1: Allocator,
         R1: ReservePolicy<S1>,
-        S1: IntoUsize + FromUsize,
-        A2: LocalAlloc,
+        S1: Size,
+        A2: Allocator,
         R2: ReservePolicy<S2>,
-        S2: IntoUsize + FromUsize,
+        S2: Size,
 {
 
     #[inline]
@@ -1359,8 +1361,8 @@ macro_rules! impl_slice_eq {
 
 impl_slice_eq! {
     [
-        T: PartialEq<U>, A1: LocalAlloc, R1: ReservePolicy<S1>, S1: IntoUsize + FromUsize,
-        U, A2: LocalAlloc, R2: ReservePolicy<S2>, S2: IntoUsize + FromUsize,
+        T: PartialEq<U>, A1: Allocator, R1: ReservePolicy<S1>, S1: Size,
+        U, A2: Allocator, R2: ReservePolicy<S2>, S2: Size,
     ]
     AllocVec<T, A1, R1, S1>,
     AllocVec<U, A2, R2, S2>
@@ -1368,7 +1370,7 @@ impl_slice_eq! {
 
 impl_slice_eq! {
     [
-        T: PartialEq<U>, U, A: LocalAlloc, R: ReservePolicy<S>, S: IntoUsize + FromUsize,
+        T: PartialEq<U>, U, A: Allocator, R: ReservePolicy<S>, S: Size,
         const N: usize,
     ]
     AllocVec<T, A, R, S>,
@@ -1377,7 +1379,7 @@ impl_slice_eq! {
 
 impl_slice_eq! {
     [
-        T, U: PartialEq<T>, A: LocalAlloc, R: ReservePolicy<S>, S: IntoUsize + FromUsize,
+        T, U: PartialEq<T>, A: Allocator, R: ReservePolicy<S>, S: Size,
         const N: usize,
     ]
     [U; N],
@@ -1386,7 +1388,7 @@ impl_slice_eq! {
 
 impl_slice_eq! {
     [
-        T, U: PartialEq<T>, A: LocalAlloc, R: ReservePolicy<S>, S: IntoUsize + FromUsize,
+        T, U: PartialEq<T>, A: Allocator, R: ReservePolicy<S>, S: Size,
         const N: usize,
     ]
     &[U; N],
@@ -1395,7 +1397,7 @@ impl_slice_eq! {
 
 impl_slice_eq! {
     [
-        T: PartialEq<U>, U, A: LocalAlloc, R: ReservePolicy<S>, S: IntoUsize + FromUsize,
+        T: PartialEq<U>, U, A: Allocator, R: ReservePolicy<S>, S: Size,
         const N: usize,
     ]
     AllocVec<T, A, R, S>,
@@ -1404,7 +1406,7 @@ impl_slice_eq! {
 
 impl_slice_eq! {
     [
-        T: PartialEq<U>, U, A: LocalAlloc, R: ReservePolicy<S>, S: IntoUsize + FromUsize,
+        T: PartialEq<U>, U, A: Allocator, R: ReservePolicy<S>, S: Size,
     ]
     AllocVec<T, A, R, S>,
     [U],
@@ -1412,7 +1414,7 @@ impl_slice_eq! {
 
 impl_slice_eq! {
     [
-        T: PartialEq<U>, U, A: LocalAlloc, R: ReservePolicy<S>, S: IntoUsize + FromUsize,
+        T: PartialEq<U>, U, A: Allocator, R: ReservePolicy<S>, S: Size,
     ]
     AllocVec<T, A, R, S>,
     &[U],
@@ -1420,7 +1422,7 @@ impl_slice_eq! {
 
 impl_slice_eq! {
     [
-        T: PartialEq<U>, U, A: LocalAlloc, R: ReservePolicy<S>, S: IntoUsize + FromUsize,
+        T: PartialEq<U>, U, A: Allocator, R: ReservePolicy<S>, S: Size,
     ]
     AllocVec<T, A, R, S>,
     &mut [U],
@@ -1428,7 +1430,7 @@ impl_slice_eq! {
 
 impl_slice_eq! {
     [
-        T, U: PartialEq<T>, A: LocalAlloc, R: ReservePolicy<S>, S: IntoUsize + FromUsize,
+        T, U: PartialEq<T>, A: Allocator, R: ReservePolicy<S>, S: Size,
     ]
     [U],
     AllocVec<T, A, R, S>,
@@ -1436,7 +1438,7 @@ impl_slice_eq! {
 
 impl_slice_eq! {
     [
-        T, U: PartialEq<T>, A: LocalAlloc, R: ReservePolicy<S>, S: IntoUsize + FromUsize,
+        T, U: PartialEq<T>, A: Allocator, R: ReservePolicy<S>, S: Size,
     ]
     &[U],
     AllocVec<T, A, R, S>,
@@ -1444,7 +1446,7 @@ impl_slice_eq! {
 
 impl_slice_eq! {
     [
-        T, U: PartialEq<T>, A: LocalAlloc, R: ReservePolicy<S>, S: IntoUsize + FromUsize,
+        T, U: PartialEq<T>, A: Allocator, R: ReservePolicy<S>, S: Size,
     ]
     &mut [U],
     AllocVec<T, A, R, S>,
@@ -1453,17 +1455,17 @@ impl_slice_eq! {
 impl<T, A, R, S> FromIteratorIn<T>
     for AllocVec<T, A, R, S>
     where
-        A: LocalAlloc,
+        A: Allocator,
         R: ReservePolicy<S>,
-        S: IntoUsize + FromUsize,
+        S: Size,
 {
     type Alloc = A;
 
     #[inline]
     fn from_iter_in<I>(
         iter: I,
-        allocator: Self::Alloc,
-    ) -> Result<Self, ReserveError<()>>
+        alloc: Self::Alloc,
+    ) -> Result<Self, AllocError>
         where
             I: IntoIterator<Item = T>,
             I::IntoIter: ExactSizeIterator
@@ -1471,8 +1473,8 @@ impl<T, A, R, S> FromIteratorIn<T>
         let iter = iter.into_iter();
         let mut vec = Self::with_capacity_in(
             S::from_usize(iter.len()),
-            allocator,
-        )?;
+            alloc,
+        ).map_err(|_| AllocError)?;
         vec.extend(iter);
         Ok(vec)
     }
@@ -1480,22 +1482,25 @@ impl<T, A, R, S> FromIteratorIn<T>
 
 unsafe impl<
     T: Send,
-    A: LocalAlloc + Send,
+    A: Allocator + Send,
     R: ReservePolicy<S>,
-    S: IntoUsize + FromUsize,
+    S: Size,
 > Send for AllocVec<T, A, R, S> {}
 
 unsafe impl<
     T: Sync,
-    A: LocalAlloc + Sync,
+    A: Allocator + Sync,
     R: ReservePolicy<S>,
-    S: IntoUsize + FromUsize,
+    S: Size,
 > Sync for AllocVec<T, A, R, S> {}
 
 #[cfg(feature = "std")]
 mod std_features {
 
     use super::*;
+
+    use std::alloc::Global;
+    use core::num::NonZero;
 
     /// A vector that stores its capacity and length as [`u32`] instead of [`usize`] resulting in the
     /// struct taking only 16 bytes on the stack on 64-bit systems.
@@ -1508,13 +1513,13 @@ mod std_features {
     ///
     /// [1]: std::alloc::alloc
     /// [2]: std::boxed::Box
-    pub type Vec32<T> = AllocVec<T, (), DynPolicy32, u32>;
+    pub type Vec32<T> = AllocVec<T, Global, DynPolicy32, u32>;
 
     impl<
         T,
         R: ReservePolicy<S>,
-        S: IntoUsize + FromUsize,
-    > Default for AllocVec<T, (), R, S> {
+        S: Size,
+    > Default for AllocVec<T, Global, R, S> {
 
         #[inline]
         fn default() -> Self {
@@ -1525,8 +1530,8 @@ mod std_features {
     impl<
         T,
         R: ReservePolicy<S>,
-        S: IntoUsize + FromUsize,
-    > Clone for AllocVec<T, (), R, S>
+        S: Size,
+    > Clone for AllocVec<T, Global, R, S>
         where T: Clone
     {
 
@@ -1541,8 +1546,8 @@ mod std_features {
     impl<
         T,
         R: ReservePolicy<S>,
-        S: IntoUsize + FromUsize,
-    > From<&[T]> for AllocVec<T, (), R, S>
+        S: Size,
+    > From<&[T]> for AllocVec<T, Global, R, S>
         where T: Clone
     {
 
@@ -1555,9 +1560,9 @@ mod std_features {
     }
 
     impl<const N: usize, T, S, R> From<[T; N]>
-        for AllocVec<T, (), R, S>
+        for AllocVec<T, Global, R, S>
         where
-            S: IntoUsize + FromUsize,
+            S: Size,
             R: ReservePolicy<S>,
     {
         
@@ -1570,9 +1575,9 @@ mod std_features {
         }
     }
 
-    impl<A, R, S> FromIterator<A> for AllocVec<A, (), R, S>
+    impl<A, R, S> FromIterator<A> for AllocVec<A, Global, R, S>
         where 
-            S: IntoUsize + FromUsize,
+            S: Size,
             R: ReservePolicy<S>,
     {
 
@@ -1584,9 +1589,9 @@ mod std_features {
         }
     }
 
-    impl<T, R, S> AllocVec<T, (), R, S>
+    impl<T, R, S> AllocVec<T, Global, R, S>
         where 
-            S: IntoUsize + FromUsize,
+            S: Size,
             R: ReservePolicy<S>,
     {
 
@@ -1595,7 +1600,7 @@ mod std_features {
         pub const fn new() -> Self {
             Self {
                 buf: Buffer::empty(),
-                allocator: (),
+                alloc: Global,
                 _markers: PhantomData,
             }
         }
@@ -1614,14 +1619,14 @@ mod std_features {
             let layout = Layout
                 ::array::<T>(capacity.into_usize())
                 .expect("layout error");
-            let buf = Buffer::new(() 
+            let buf = Buffer::new(Global
                 .allocate(
                     layout
                 ).expect("global alloc failed"),
             );
             Self {
                 buf,
-                allocator: (),
+                alloc: Global,
                 _markers: PhantomData,
             }
         }
@@ -1636,14 +1641,14 @@ mod std_features {
             let layout = Layout
                 ::array::<T>(capacity.into_usize())
                 .expect("layout error");
-            let buf = Buffer::new(()
+            let buf = Buffer::new(Global
                 .allocate(
                     layout
                 ).expect("global alloc failed"),
             );
             Self {
                 buf,
-                allocator: (),
+                alloc: Global,
                 _markers: PhantomData,
             }
         }
@@ -1744,7 +1749,7 @@ mod std_features {
             unsafe {
                 Self {
                     buf: Buffer::from_raw_parts(ptr, len, capacity),
-                    allocator: (),
+                    alloc: Global,
                     _markers: PhantomData,
                 }
             } 
@@ -1772,7 +1777,7 @@ mod std_features {
             unsafe {
                 Self {
                     buf: Buffer::from_parts(ptr, len, capacity),
-                    allocator: (),
+                    alloc: Global,
                     _markers: PhantomData,
                 }
             } 
@@ -1801,9 +1806,9 @@ mod std_features {
         for std::vec::Vec<T>
         where
             T: Clone,
-            A: LocalAlloc,
+            A: Allocator,
             R: ReservePolicy<S>,
-            S: IntoUsize + FromUsize,
+            S: Size,
     {
 
         #[inline]
@@ -1812,35 +1817,33 @@ mod std_features {
         }
     }
 
-    impl<T, R, S> From<AllocVec<T, (), R, S>>
+    impl<T, R, S> From<AllocVec<T, Global, R, S>>
         for std::vec::Vec<T>
         where
             R: ReservePolicy<S>,
-            S: IntoUsize + FromUsize
+            S: Size
     {
 
         #[inline]
-        fn from(value: AllocVec<T, (), R, S>) -> Self {
+        fn from(value: AllocVec<T, Global, R, S>) -> Self {
             unsafe {
                 let (ptr, len, cap) = value.into_raw_parts();
                 // SAFETY:
-                //   - This is safe because `()` implementation of LocalAlloc uses GlobalAlloc
+                //   - This is safe because `()` implementation of Allocator uses GlobalAlloc
                 Self::from_raw_parts(ptr, len.into_usize(), cap.into_usize())
             }
         }
     }
 
-    use core::num::NonZero;
-
-    impl<R, S> From<AllocVec<NonZero<u8>, (), R, S>>
+    impl<R, S> From<AllocVec<NonZero<u8>, Global, R, S>>
         for std::ffi::CString
         where
             R: ReservePolicy<S>,
-            S: IntoUsize + FromUsize,
+            S: Size,
     {
 
         #[inline]
-        fn from(value: AllocVec<NonZero<u8>, (), R, S>) -> Self {
+        fn from(value: AllocVec<NonZero<u8>, Global, R, S>) -> Self {
             unsafe {
                 let v: std::vec::Vec<u8> = {
                     let (ptr, len, cap) = value.into_raw_parts();
@@ -1851,22 +1854,22 @@ mod std_features {
         }
     }
 
-    impl<T, R, S> From<AllocVec<T, (), R, S>>
+    impl<T, R, S> From<AllocVec<T, Global, R, S>>
         for std::sync::Arc<[T]>
         where 
-            S: IntoUsize + FromUsize,
+            S: Size,
             R: ReservePolicy<S>,
     {
 
         #[inline]
-        fn from(value: AllocVec<T, (), R, S>) -> Self {
+        fn from(value: AllocVec<T, Global, R, S>) -> Self {
             let (vec_ptr, len, cap) = value.into_raw_parts();
             let rc_ptr = (0..len.into_usize())
                 .map(|i| unsafe {
                     vec_ptr.add(i).read()
                 }).collect();
             let _ = unsafe {
-                AllocVec::<T, (), R, S>::from_raw_parts(
+                AllocVec::<T, Global, R, S>::from_raw_parts(
                     vec_ptr,
                     S::ZERO,
                     cap
@@ -1876,14 +1879,14 @@ mod std_features {
         }
     }
 
-    impl<T, R, S> From<AllocVec<T, (), R, S>>
+    impl<T, R, S> From<AllocVec<T, Global, R, S>>
         for std::boxed::Box<[T]>
         where
-            S: IntoUsize + FromUsize,
+            S: Size,
             R: ReservePolicy<S>
     {
         #[inline]
-        fn from(value: AllocVec<T, (), R, S>) -> Self {
+        fn from(value: AllocVec<T, Global, R, S>) -> Self {
             value.into_boxed_slice()
         }
     }
