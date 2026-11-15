@@ -1048,6 +1048,12 @@ use base::Map;
 
 crate::macros::impl_traits!(
     for Map<T, A: [Allocator], ReservePol: [ReservePolicy<u32>]>
+    Default where A: Default =>
+
+        fn default() -> Self {
+            Self::new_in(A::default())
+        }
+    ,
     Index<SlotIndex<T>> =>
 
         type Output = T;
@@ -1260,13 +1266,6 @@ mod std_features {
                 alloc: Global,
                 _marker: PhantomData,
             }
-        }
-    }
-
-    impl<T> Default for SlotMap<T> {
-
-        fn default() -> Self {
-            Self::new()
         }
     }
 }

@@ -1,5 +1,8 @@
 # Cangelog
 All changes to this project will be documented in this file
+## [0.5.2]
+### Added
+- `Default` implementation for all collections where `A: Default`.
 ## [0.5.1]
 ### Fixed
 - docs
@@ -93,6 +96,7 @@ All changes to this project will be documented in this file
 - Custom containers
 - Arena allocator implementation
 
+[0.5.2]: https://crates.io/crates/leimu-mem/0.5.2
 [0.5.1]: https://crates.io/crates/leimu-mem/0.5.1
 [0.5.0]: https://crates.io/crates/leimu-mem/0.5.0
 [0.4.2]: https://crates.io/crates/leimu-mem/0.4.2

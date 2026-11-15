@@ -1158,6 +1158,13 @@ crate::macros::impl_traits!{
         R: [ReservePolicy<S>],
         S: [Size]
     >
+    Default where A: Default =>
+
+        #[inline]
+        fn default() -> Self {
+            Self::new_in(A::default())
+        }
+    ,
     Drop =>
 
         fn drop(&mut self) {
@@ -1519,18 +1526,6 @@ mod std_features {
         T,
         R: ReservePolicy<S>,
         S: Size,
-    > Default for AllocVec<T, Global, R, S> {
-
-        #[inline]
-        fn default() -> Self {
-            AllocVec::new()
-        }
-    }
-
-    impl<
-        T,
-        R: ReservePolicy<S>,
-        S: Size,
     > Clone for AllocVec<T, Global, R, S>
         where T: Clone
     {
@@ -1818,7 +1813,7 @@ mod std_features {
     }
 
     impl<T, R, S> From<AllocVec<T, Global, R, S>>
-        for std::vec::Vec<T>
+        for std::vec::Vec<T, Global>
         where
             R: ReservePolicy<S>,
             S: Size
@@ -1828,8 +1823,6 @@ mod std_features {
         fn from(value: AllocVec<T, Global, R, S>) -> Self {
             unsafe {
                 let (ptr, len, cap) = value.into_raw_parts();
-                // SAFETY:
-                //   - This is safe because `()` implementation of Allocator uses GlobalAlloc
                 Self::from_raw_parts(ptr, len.into_usize(), cap.into_usize())
             }
         }
