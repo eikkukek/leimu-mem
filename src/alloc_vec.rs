@@ -8,7 +8,7 @@
 mod buffer;
 
 use core::{
-    alloc::{Layout, Allocator, AllocError},
+    alloc::{Layout, Allocator},
     borrow::{Borrow, BorrowMut},
     fmt::{Debug, Display},
     hash::{Hash, Hasher},
