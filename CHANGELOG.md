@@ -1,5 +1,10 @@
 # Cangelog
 All changes to this project will be documented in this file
+## [0.6.0]
+### Changed
+- Changed the `FromIteratorIn::from_iter_in` to return a new `FromIterInError` instead of just `AllocError`.
+### Added
+- `FromIteratorIn` implementation for `Box`.
 ## [0.5.2]
 ### Added
 - `Default` implementation for all collections where `A: Default`.

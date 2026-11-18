@@ -24,7 +24,7 @@ use core::{
 use crate::{
     reserve::*,
     size::{Size, NonZeroSize},
-    iter::FromIteratorIn,
+    iter::{FromIteratorIn, FromIteratorInError},
 };
 
 pub(crate) use buffer::Buffer;
@@ -1472,7 +1472,7 @@ impl<T, A, R, S> FromIteratorIn<T>
     fn from_iter_in<I>(
         iter: I,
         alloc: Self::Alloc,
-    ) -> Result<Self, AllocError>
+    ) -> Result<Self, FromIteratorInError>
         where
             I: IntoIterator<Item = T>,
             I::IntoIter: ExactSizeIterator
@@ -1481,7 +1481,7 @@ impl<T, A, R, S> FromIteratorIn<T>
         let mut vec = Self::with_capacity_in(
             S::from_usize(iter.len()),
             alloc,
-        ).map_err(|_| AllocError)?;
+        )?;
         vec.extend(iter);
         Ok(vec)
     }

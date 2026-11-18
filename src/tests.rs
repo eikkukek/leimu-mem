@@ -29,7 +29,7 @@ fn alloc_vec() -> Result<(), reserve::ReserveError<()>> {
 
 #[test]
 #[cfg(feature = "std")]
-fn collect_in() -> Result<(), reserve::ReserveError<()>> {
+fn collect_in() -> Result<(), crate::iter::FromIteratorInError> {
     use arena::Arena;
     use iter::CollectIn;
     use alloc_vec::FixedVec;
