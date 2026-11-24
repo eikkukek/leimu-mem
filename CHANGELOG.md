@@ -1,5 +1,10 @@
 # Cangelog
 All changes to this project will be documented in this file
+## [0.6.1]
+### Added
+- Support for zero-sized types for `AllocVec`
+### Fixed
+- A critical bug where `AllocVec` doesn't drop its elements.
 ## [0.6.0]
 ### Changed
 - Changed the `FromIteratorIn::from_iter_in` to return a new `FromIterInError` instead of just `AllocError`.
@@ -101,6 +106,8 @@ All changes to this project will be documented in this file
 - Custom containers
 - Arena allocator implementation
 
+[0.6.1]: https://crates.io/crates/leimu-mem/0.6.1
+[0.6.0]: https://crates.io/crates/leimu-mem/0.6.0
 [0.5.2]: https://crates.io/crates/leimu-mem/0.5.2
 [0.5.1]: https://crates.io/crates/leimu-mem/0.5.1
 [0.5.0]: https://crates.io/crates/leimu-mem/0.5.0

@@ -98,3 +98,16 @@ fn stack_alloc() -> Result<(), reserve::ReserveError<()>> {
     assert!(allocator.allocate(Layout::new::<u8>()).is_err());
     Ok(())
 }
+
+#[test]
+fn drop() {
+    struct Drops;
+    impl Drop for Drops {
+
+        fn drop(&mut self) {
+            std::println!("dropped");
+        }
+    }
+    let vec = crate::vec32![Drops, Drops];
+    assert!(vec.len() == 2 && vec.capacity() == 2);
+}

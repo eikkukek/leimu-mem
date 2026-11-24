@@ -237,6 +237,7 @@ impl<T, A, R, S> AllocVec<T, A, R, S>
         let buf = Buffer::new(
             alloc
                 .allocate(layout)?,
+            (size_of::<T>() == 0).then_some(capacity)
         );
         Ok(Self {
             buf,
@@ -265,6 +266,7 @@ impl<T, A, R, S> AllocVec<T, A, R, S>
         let mut buf = Buffer::<T, S>::new(
             alloc
                 .allocate(layout)?,
+            (size_of::<T>() == 0).then_some(capacity)
         );
         let ptr = buf.as_mut_ptr();
         for i in 0..len.into_usize() {
@@ -751,6 +753,7 @@ impl<T, A, R, S> AllocVec<T, A, R, S>
                             .expect("layout error"),
                         new_layout,
                     ).expect("alloc error"),
+                    (size_of::<T>() == 0).then_some(self.len()),
             )
         };
         unsafe {
@@ -833,7 +836,8 @@ impl<T, A, R, S> AllocVec<T, A, R, S>
         }
         debug_assert!(buf.len() <= buf.capacity());
         let (ptr, layout) = unsafe { buf.reallocate(alloc
-            .allocate(Layout::array::<T>(new_capacity.into_usize())?)?
+            .allocate(Layout::array::<T>(new_capacity.into_usize())?)?,
+            (size_of::<T>() == 0).then_some(new_capacity)
         ) };
         if layout.size() != 0 {
             unsafe { alloc.deallocate(ptr, layout); }
@@ -1168,6 +1172,7 @@ crate::macros::impl_traits!{
     Drop =>
 
         fn drop(&mut self) {
+            self.clear();
             if let Some((ptr, layout)) = self.buf.deallocate() {
                 unsafe {
                     self.alloc
@@ -1618,6 +1623,7 @@ mod std_features {
                 .allocate(
                     layout
                 ).expect("global alloc failed"),
+                (size_of::<T>() == 0).then_some(capacity)
             );
             Self {
                 buf,
@@ -1640,6 +1646,7 @@ mod std_features {
                 .allocate(
                     layout
                 ).expect("global alloc failed"),
+                (size_of::<T>() == 0).then_some(capacity)
             );
             Self {
                 buf,

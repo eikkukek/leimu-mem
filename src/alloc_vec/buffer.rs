@@ -24,17 +24,16 @@ pub(crate) struct Buffer<T, S = usize>
 impl<T: Sized, S: Size> Buffer<T, S> { 
 
     #[inline]
-    pub fn new(allocation: NonNull<[u8]>) -> Self {
-        if size_of::<T>() == 0 {
-            return Self {
-                ptr: allocation.cast(),
-                len: S::ZERO,
-                capacity: S::ZERO,
-            }
-        }
+    pub fn new(
+        allocation: NonNull<[u8]>,
+        capacity: Option<S>,
+    ) -> Self {
         Self {
             ptr: allocation.cast(),
-            capacity: S::from_usize(allocation.len() / size_of::<T>()),
+            capacity: S::from_usize(
+                allocation.len().max(capacity.map_or(0, Size::into_usize))  /
+                size_of::<T>().max(1)
+            ),
             len: S::ZERO,
         }
     }
@@ -110,9 +109,12 @@ impl<T: Sized, S: Size> Buffer<T, S> {
     pub unsafe fn reallocate(
         &mut self,
         new: NonNull<[u8]>,
+        capacity: Option<S>,
     ) -> (NonNull<u8>, Layout) {
         let ptr: NonNull<T> = new.cast();
-        let capacity = S::from_usize(new.len() / size_of::<T>());
+        let capacity = S::from_usize(new.len().max(capacity
+            .map_or(0, Size::into_usize))
+            / size_of::<T>().max(1));
         debug_assert!(
             capacity >= self.len,
             "new buffer's capacity {} doesn't fit this buffer's length {}",
