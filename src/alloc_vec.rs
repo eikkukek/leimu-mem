@@ -1172,7 +1172,6 @@ crate::macros::impl_traits!{
     Drop =>
 
         fn drop(&mut self) {
-            self.clear();
             if let Some((ptr, layout)) = self.buf.deallocate() {
                 unsafe {
                     self.alloc

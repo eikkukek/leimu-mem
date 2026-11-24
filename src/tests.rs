@@ -101,13 +101,18 @@ fn stack_alloc() -> Result<(), reserve::ReserveError<()>> {
 
 #[test]
 fn drop() {
+    use std::sync::atomic::*;;
+    static DROPPED_COUNT: AtomicU32 = AtomicU32::new(0);
     struct Drops;
     impl Drop for Drops {
 
         fn drop(&mut self) {
+            DROPPED_COUNT.fetch_add(1, Ordering::Relaxed);
             std::println!("dropped");
         }
     }
     let vec = crate::vec32![Drops, Drops];
     assert!(vec.len() == 2 && vec.capacity() == 2);
+    ::core::mem::drop(vec);
+    assert_eq!(DROPPED_COUNT.load(Ordering::Relaxed), 2);
 }

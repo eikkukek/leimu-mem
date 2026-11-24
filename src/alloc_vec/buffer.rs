@@ -348,7 +348,7 @@ impl<T: Sized, S: Size> Buffer<T, S> {
     pub fn clear(&mut self) {
         unsafe {
             debug_assert!(self.len() <= self.capacity());
-            if needs_drop::<T>() && self.capacity() == S::ZERO {
+            if needs_drop::<T>() {
                 for i in (0..self.len.into_usize()).rev() {
                     self.set_len(S::from_usize(i));
                     self.ptr.add(i).drop_in_place();

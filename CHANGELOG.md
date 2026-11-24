@@ -1,10 +1,12 @@
 # Cangelog
 All changes to this project will be documented in this file
+## [0.6.2]
+
+### Fixed
+- A critical bug where `AllocVec` doesn't drop its elements.
 ## [0.6.1]
 ### Added
 - Support for zero-sized types for `AllocVec`
-### Fixed
-- A critical bug where `AllocVec` doesn't drop its elements.
 ## [0.6.0]
 ### Changed
 - Changed the `FromIteratorIn::from_iter_in` to return a new `FromIterInError` instead of just `AllocError`.
