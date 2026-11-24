@@ -101,7 +101,7 @@ fn stack_alloc() -> Result<(), reserve::ReserveError<()>> {
 
 #[test]
 fn drop() {
-    use std::sync::atomic::*;;
+    use std::sync::atomic::*;
     static DROPPED_COUNT: AtomicU32 = AtomicU32::new(0);
     struct Drops;
     impl Drop for Drops {
