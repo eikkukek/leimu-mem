@@ -1169,6 +1169,15 @@ crate::macros::impl_traits!{
             Self::new_in(A::default())
         }
     ,
+    Clone where T: Clone, A: Clone =>
+        fn clone(&self) -> Self {
+            use crate::iter::CollectIn;
+            self.iter()
+                .cloned()
+                .collect_in(self.alloc.clone())
+                .expect("allocation failed")
+        }
+    ,
     Drop =>
 
         fn drop(&mut self) {
@@ -1524,23 +1533,7 @@ mod std_features {
     ///
     /// [1]: std::alloc::alloc
     /// [2]: std::boxed::Box
-    pub type Vec32<T, A = Global> = AllocVec<T, A, DynPolicy32, u32>;
-
-    impl<
-        T,
-        R: ReservePolicy<S>,
-        S: Size,
-    > Clone for AllocVec<T, Global, R, S>
-        where T: Clone
-    {
-
-        #[inline]
-        fn clone(&self) -> Self {
-            self.iter()
-                .cloned()
-                .collect()
-        }
-    }
+    pub type Vec32<T, A = Global> = AllocVec<T, A, DynPolicy32, u32>; 
 
     impl<
         T,

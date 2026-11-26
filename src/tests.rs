@@ -115,4 +115,11 @@ fn drop() {
     assert!(vec.len() == 2 && vec.capacity() == 2);
     ::core::mem::drop(vec);
     assert_eq!(DROPPED_COUNT.load(Ordering::Relaxed), 2);
+    let fixed = crate::alloc_vec::FixedVec32::with_len_with_in(
+        2,
+        |_| Drops,
+        std::alloc::Global
+    );
+    ::core::mem::drop(fixed);
+    assert_eq!(DROPPED_COUNT.load(Ordering::Relaxed), 4);
 }

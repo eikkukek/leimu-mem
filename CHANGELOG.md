@@ -1,29 +1,32 @@
 # Cangelog
 All changes to this project will be documented in this file
-## [0.6.3]
+## [0.6.4] - 2026-11-26
+### Added
+- `Clone` implementation for for all `AllocVec` where `T: Clone` and `A: Clone`
+## [0.6.3] - 2026-11-26
 ### Changed
-- `Vec32` optionally accepting an allocator as a type parameter.
+- `Vec32` optionally accepting an allocator as a type parameter
 ### Added
 - reimport the `vec32` macro to `alloc_vec`
-## [0.6.2]
+## [0.6.2] - 2026-11-24
 
 ### Fixed
-- A critical bug where `AllocVec` doesn't drop its elements.
-## [0.6.1]
+- A critical bug where `AllocVec` doesn't drop its elements
+## [0.6.1] - 2026-11-24
 ### Added
 - Support for zero-sized types for `AllocVec`
-## [0.6.0]
+## [0.6.0] - 2026-11-18
 ### Changed
-- Changed the `FromIteratorIn::from_iter_in` to return a new `FromIterInError` instead of just `AllocError`.
+- Changed the `FromIteratorIn::from_iter_in` to return a new `FromIterInError` instead of just `AllocError`
 ### Added
-- `FromIteratorIn` implementation for `Box`.
-## [0.5.2]
+- `FromIteratorIn` implementation for `Box`
+## [0.5.2] - 2026-11-16
 ### Added
-- `Default` implementation for all collections where `A: Default`.
-## [0.5.1]
+- `Default` implementation for all collections where `A: Default`
+## [0.5.1] - 2026-11-13
 ### Fixed
 - docs
-## [0.5.0]
+## [0.5.0] - 2026-11-13
 ### Removed
 - `LocalAlloc` in favor of the now stable `Allocator` trait.
 ### Removed
@@ -113,6 +116,7 @@ All changes to this project will be documented in this file
 - Custom containers
 - Arena allocator implementation
 
+[0.6.4]: https://crates.io/crates/leimu-mem/0.6.4
 [0.6.3]: https://crates.io/crates/leimu-mem/0.6.3
 [0.6.2]: https://crates.io/crates/leimu-mem/0.6.2
 [0.6.1]: https://crates.io/crates/leimu-mem/0.6.1
