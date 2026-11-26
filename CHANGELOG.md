@@ -1,5 +1,10 @@
 # Cangelog
 All changes to this project will be documented in this file
+## [0.6.3]
+### Changed
+- `Vec32` optionally accepting an allocator as a type parameter.
+### Added
+- reimport the `vec32` macro to `alloc_vec`
 ## [0.6.2]
 
 ### Fixed
@@ -108,6 +113,8 @@ All changes to this project will be documented in this file
 - Custom containers
 - Arena allocator implementation
 
+[0.6.3]: https://crates.io/crates/leimu-mem/0.6.3
+[0.6.2]: https://crates.io/crates/leimu-mem/0.6.2
 [0.6.1]: https://crates.io/crates/leimu-mem/0.6.1
 [0.6.0]: https://crates.io/crates/leimu-mem/0.6.0
 [0.5.2]: https://crates.io/crates/leimu-mem/0.5.2

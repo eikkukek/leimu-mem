@@ -1524,7 +1524,7 @@ mod std_features {
     ///
     /// [1]: std::alloc::alloc
     /// [2]: std::boxed::Box
-    pub type Vec32<T> = AllocVec<T, Global, DynPolicy32, u32>;
+    pub type Vec32<T, A = Global> = AllocVec<T, A, DynPolicy32, u32>;
 
     impl<
         T,
@@ -1912,3 +1912,5 @@ mod std_features {
 
 #[cfg(feature = "std")]
 pub use std_features::*;
+
+pub use crate::vec32;
